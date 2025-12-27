@@ -1,16 +1,17 @@
+import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 
 export const metadata = {
-  title: 'Next.js MongoDB Template',
-  description: 'A simple template with App Router, MongoDB, and shadcn/ui',
+  title: 'Escape Matrix - Habit Tracker',
+  description: 'Track your habits and escape the matrix',
 }
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className="antialiased">{children}</body>
+      </html>
+    </ClerkProvider>
   )
 }

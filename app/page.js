@@ -1,45 +1,65 @@
 'use client'
 
-import { useEffect } from "react";
+import { useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import { SignIn } from '@clerk/nextjs'
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await fetch('/api/');
-      const data = await response.json();
-      console.log(data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+export default function LoginPage() {
+  const { isSignedIn, isLoaded } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
-    helloWorldApi();
-  }, []);
+    if (isLoaded && isSignedIn) {
+      // Check if user has completed onboarding
+      const hasCompletedOnboarding = localStorage.getItem('onboarding_completed')
+      if (hasCompletedOnboarding === 'true') {
+        router.push('/dashboard')
+      } else {
+        router.push('/onboarding')
+      }
+    }
+  }, [isSignedIn, isLoaded, router])
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    )
+  }
+
+  if (isSignedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
+        <div className="text-white text-xl">Redirecting...</div>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" alt="Emergent" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 px-4">
+      <div className="mb-8 text-center">
+        <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">Escape Matrix</h1>
+        <p className="text-xl text-purple-200">Break free from bad habits. Build your future.</p>
+      </div>
+      
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <SignIn 
+          appearance={{
+            elements: {
+              rootBox: "mx-auto",
+              card: "shadow-none"
+            }
+          }}
+          routing="path"
+          path="/"
+        />
+      </div>
+      
+      <div className="mt-8 text-center text-purple-200">
+        <p className="text-sm">Sign in with Google to get started</p>
+      </div>
     </div>
-  );
-};
-
-function App() {
-  return (
-    <div className="App">
-      <Home />
-    </div>
-  );
+  )
 }
-
-export default App;
