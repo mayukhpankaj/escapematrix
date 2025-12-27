@@ -41,14 +41,13 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 CLERK_PEM_PUBLIC_KEY = os.getenv("CLERK_PEM_PUBLIC_KEY", "")
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
 
-# Gemini configuration via Emergent Universal Key
-EMERGENT_API_KEY = os.getenv("GEMINI_API_KEY")
-if not EMERGENT_API_KEY:
+# Gemini configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY is not set in environment variables")
 
-# Emergent API endpoint for LLM integration  
-EMERGENT_API_URL = "https://llm.api.emergent.agent/v1/chat/completions"
-GEMINI_MODEL = "gemini-2.0-flash-exp"
+# Configure Google Generative AI
+genai.configure(api_key=GEMINI_API_KEY)
 
 
 # Pydantic Models
