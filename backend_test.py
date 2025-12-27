@@ -12,9 +12,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Use the production URL from environment
-BASE_URL = os.getenv("NEXT_PUBLIC_BASE_URL", "https://escapematrix.preview.emergentagent.com")
-API_BASE_URL = f"{BASE_URL}:8000"  # FastAPI runs on port 8000
+# Use the local FastAPI server for testing
+API_BASE_URL = "http://localhost:8000"  # FastAPI runs locally on port 8000
 
 def create_test_jwt(user_id="test_user_123"):
     """Create a test JWT token for authentication"""
