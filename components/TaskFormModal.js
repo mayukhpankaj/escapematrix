@@ -19,7 +19,7 @@ export default function TaskFormModal({ onClose, onTaskCreated }) {
     task_description: '',
     task_type: 'SHORT_TERM',
     priority: 'NOTURGENT-NOTIMPORTANT',
-    status: 'PENDING',
+    status: 'IN-PROGRESS',
     repetition_days: [],
     repetition_time: '',
   })
@@ -143,40 +143,42 @@ export default function TaskFormModal({ onClose, onTaskCreated }) {
             </RadioGroup>
           </div>
 
-          {/* Priority (Eisenhower Matrix) */}
-          <div>
-            <Label>Priority (Eisenhower Matrix) *</Label>
-            <RadioGroup
-              value={formData.priority}
-              onValueChange={(value) => setFormData({ ...formData, priority: value })}
-              className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3"
-            >
-              <div className="flex items-center space-x-2 border rounded-lg p-3">
-                <RadioGroupItem value="URGENT-IMPORTANT" id="urgent-important" />
-                <Label htmlFor="urgent-important" className="font-normal cursor-pointer">
-                  🔴 Urgent & Important
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2 border rounded-lg p-3">
-                <RadioGroupItem value="URGENT-NOTIMPORTANT" id="urgent-notimportant" />
-                <Label htmlFor="urgent-notimportant" className="font-normal cursor-pointer">
-                  🟠 Urgent Only
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2 border rounded-lg p-3">
-                <RadioGroupItem value="NOTURGENT-IMPORTANT" id="noturgent-important" />
-                <Label htmlFor="noturgent-important" className="font-normal cursor-pointer">
-                  🔵 Important Only
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2 border rounded-lg p-3">
-                <RadioGroupItem value="NOTURGENT-NOTIMPORTANT" id="noturgent-notimportant" />
-                <Label htmlFor="noturgent-notimportant" className="font-normal cursor-pointer">
-                  ⚪ Low Priority
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
+          {/* Priority (Eisenhower Matrix) - Only show for SHORT_TERM */}
+          {formData.task_type === 'SHORT_TERM' && (
+            <div>
+              <Label>Priority (Eisenhower Matrix) *</Label>
+              <RadioGroup
+                value={formData.priority}
+                onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3"
+              >
+                <div className="flex items-center space-x-2 border rounded-lg p-3">
+                  <RadioGroupItem value="URGENT-IMPORTANT" id="urgent-important" />
+                  <Label htmlFor="urgent-important" className="font-normal cursor-pointer">
+                    🔴 Urgent & Important
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-lg p-3">
+                  <RadioGroupItem value="URGENT-NOTIMPORTANT" id="urgent-notimportant" />
+                  <Label htmlFor="urgent-notimportant" className="font-normal cursor-pointer">
+                    🟠 Urgent Only
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-lg p-3">
+                  <RadioGroupItem value="NOTURGENT-IMPORTANT" id="noturgent-important" />
+                  <Label htmlFor="noturgent-important" className="font-normal cursor-pointer">
+                    🔵 Important Only
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-lg p-3">
+                  <RadioGroupItem value="NOTURGENT-NOTIMPORTANT" id="noturgent-notimportant" />
+                  <Label htmlFor="noturgent-notimportant" className="font-normal cursor-pointer">
+                    ⚪ Low Priority
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
 
           {/* Repetition (only for SHORT_TERM) */}
           {formData.task_type === 'SHORT_TERM' && (

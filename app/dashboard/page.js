@@ -11,7 +11,7 @@ import TaskFormModal from '@/components/TaskFormModal'
 const API_BASE = '/backend-api/api'
 
 export default function DashboardPage() {
-  const [tasks, setTasks] = useState({ 'TO-DO': [], 'PENDING': [], 'COMPLETED': [] })
+  const [tasks, setTasks] = useState({ 'TO-DO': [], 'IN-PROGRESS': [], 'COMPLETED': [] })
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showTaskModal, setShowTaskModal] = useState(false)
@@ -37,7 +37,31 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setTasks(data)
+        
+        // Filter to only show SHORT_TERM tasks
+        const filteredTasks = {
+          'TO-DO': [],
+          'IN-PROGRESS': [],
+          'COMPLETED': []
+        }
+        
+        // Process all tasks and filter SHORT_TERM only
+        Object.keys(data).forEach(status => {
+          if (data[status]) {
+            const shortTermTasks = data[status].filter(task => task.task_type === 'SHORT_TERM')
+            
+            // Map PENDING to IN-PROGRESS
+            if (status === 'PENDING') {
+              filteredTasks['IN-PROGRESS'] = shortTermTasks
+            } else if (status === 'IN-PROGRESS') {
+              filteredTasks['IN-PROGRESS'] = [...filteredTasks['IN-PROGRESS'], ...shortTermTasks]
+            } else {
+              filteredTasks[status] = shortTermTasks
+            }
+          }
+        })
+        
+        setTasks(filteredTasks)
       }
     } catch (error) {
       console.error('Error fetching tasks:', error)
@@ -154,23 +178,23 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* PENDING Column */}
+                {/* IN-PROGRESS Column */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Clock className="w-5 h-5 text-orange-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Pending</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">In-Progress</h3>
                     <span className="bg-orange-100 text-orange-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
-                      {tasks['PENDING']?.length || 0}
+                      {tasks['IN-PROGRESS']?.length || 0}
                     </span>
                   </div>
                   <div className="space-y-3">
-                    {tasks['PENDING']?.length > 0 ? (
-                      tasks['PENDING'].map((task) => (
+                    {tasks['IN-PROGRESS']?.length > 0 ? (
+                      tasks['IN-PROGRESS'].map((task) => (
                         <TaskCard key={task.id} task={task} onUpdate={fetchTasks} />
                       ))
                     ) : (
                       <div className="bg-white rounded-lg p-6 text-center text-gray-500">
-                        No pending tasks
+                        No tasks in progress
                       </div>
                     )}
                   </div>
