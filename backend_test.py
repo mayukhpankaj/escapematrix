@@ -365,13 +365,15 @@ def test_health_check():
 
 def main():
     print("=" * 70)
-    print("  ESCAPE MATRIX - AI CHAT ENDPOINT TESTS")
+    print("  ESCAPE MATRIX - AI CHAT ENDPOINT TESTS (GEMINI INTEGRATION)")
     print("=" * 70)
     print(f"Testing API at: {API_BASE_URL}")
     
     tests = [
         test_health_check,
-        test_ai_chat_valid_request,
+        test_ai_chat_plan_response,
+        test_ai_chat_createtasks_response,
+        test_ai_chat_message_response,
         test_ai_chat_no_auth_header,
         test_ai_chat_invalid_jwt,
         test_ai_chat_missing_query,
@@ -397,15 +399,17 @@ def main():
     
     if failed == 0:
         print("\n✅ All AI Chat endpoint tests passed!")
-        print("🎉 The /api/processquery endpoint is working correctly!")
+        print("🎉 The /api/processquery endpoint with Gemini integration is working correctly!")
         print("\n📝 Test Summary:")
-        print("   ✅ Valid requests return placeholder response")
+        print("   ✅ PLAN responses work correctly")
+        print("   ✅ CREATETASKS responses with proper task schema")
+        print("   ✅ MESSAGE responses work correctly")
         print("   ✅ Authentication is properly enforced")
         print("   ✅ Input validation works correctly")
         print("   ✅ Error handling is appropriate")
     else:
         print(f"\n❌ {failed} test(s) failed!")
-        print("🔧 Please check the endpoint implementation")
+        print("🔧 Please check the Gemini integration implementation")
     
     return failed == 0
 
