@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth, UserButton } from '@clerk/nextjs'
+import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Plus, Menu, X, CheckCircle2, Clock, ListTodo, Target } from 'lucide-react'
 import TaskCard from '@/components/TaskCard'
 import TaskFormModal from '@/components/TaskFormModal'
 import Image from 'next/image'
+import useUserStore from '@/store/userStore'
 
 const API_BASE = '/backend-api/api'
 
@@ -18,14 +19,26 @@ export default function DashboardPage() {
   const [showTaskModal, setShowTaskModal] = useState(false)
   const router = useRouter()
   const { isSignedIn, isLoaded, getToken } = useAuth()
+  const { user } = useUser()
+  const { setUser, userId } = useUserStore()
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
       router.push('/')
-    } else if (isSignedIn) {
+    } else if (isSignedIn && user) {
+      // Store user data in global state
+      setUser({
+        userId: user.id,
+        email: user.primaryEmailAddress?.emailAddress,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: user.fullName,
+        imageUrl: user.imageUrl,
+        username: user.username,
+      })
       fetchTasks()
     }
-  }, [isSignedIn, isLoaded, router])
+  }, [isSignedIn, isLoaded, user, router, setUser])
 
   const fetchTasks = async () => {
     try {
