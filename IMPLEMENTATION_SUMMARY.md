@@ -256,7 +256,7 @@ All core features requested have been implemented:
 ## 🚀 Ready to Use!
 
 The app is now live and ready to use at:
-**https://matrix-escape-11.preview.emergentagent.com**
+**https://escapematrix.preview.emergentagent.com**
 
 Sign in with your Google account and start tracking your habits!
 

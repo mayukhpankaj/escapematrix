@@ -119,7 +119,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 FASTAPI_URL=http://localhost:8000
 
 # Next.js
-NEXT_PUBLIC_BASE_URL=https://matrix-escape-11.preview.emergentagent.com
+NEXT_PUBLIC_BASE_URL=https://escapematrix.preview.emergentagent.com
 ```
 
 ### Database Schema
