@@ -105,13 +105,13 @@
 user_problem_statement: "Build a full-stack habit tracking app called 'Escape Matrix' with FastAPI backend, Supabase/Postgres DB, React frontend, and Clerk Auth. Features include task management (short-term and long-term), dashboard with status grouping (TO-DO, IN-PROGRESS, COMPLETED), onboarding carousel, and AI chat interface."
 
 backend:
-  - task: "AI Chat Endpoint - Process Query"
+  - task: "AI Chat Endpoint - Process Query with Gemini"
     implemented: true
-    working: true
+    working: "NA"
     file: "/app/backend/main.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
@@ -119,6 +119,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Comprehensive testing completed successfully. All test scenarios passed: (1) Valid requests with proper JWT return correct placeholder response with expected structure (response, query, user_id), (2) Authentication properly enforced - 401 for missing Authorization header, (3) Invalid JWT tokens properly rejected with 401, (4) Input validation working - 400 for missing query field, (5) Empty query strings properly rejected with 400. FastAPI backend endpoint at localhost:8000/api/processquery is fully functional and ready for AI integration."
+      - working: "NA"
+        agent: "main"
+        comment: "Updated endpoint to integrate with Google Gemini API using google-generativeai Python library. Configured with user-provided Gemini API key (AIzaSy...). Implemented structured JSON response with schema: {type: MESSAGE|PLAN|CREATETASKS, message: string, tasks: array}. System instruction guides AI to act as task manager agent. Tested manually with curl - working correctly. Returns PLAN response for initial query and CREATETASKS response with proper task objects when user confirms."
 
   - task: "Task Creation Endpoint"
     implemented: true
