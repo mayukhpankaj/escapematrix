@@ -80,10 +80,18 @@ export default function TaskCard({ task, onUpdate }) {
           {/* Task Title */}
           <div className="flex items-start justify-between gap-2">
             <h4 className="font-semibold text-gray-900 line-clamp-2">{task.task_name}</h4>
-            <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
-              {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
-              {priorityLabels[task.priority]?.split(' ')[0]}
-            </Badge>
+            <div className="flex gap-1 flex-col items-end">
+              <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
+                {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
+                {priorityLabels[task.priority]?.split(' ')[0]}
+              </Badge>
+              {task.status === 'IN-PROGRESS' && (
+                <Badge className="bg-blue-100 text-blue-800 text-xs">
+                  <Clock className="w-3 h-3 mr-1" />
+                  In Progress
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Task Description */}
