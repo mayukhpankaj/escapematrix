@@ -182,7 +182,7 @@ async def get_tasks(
         user_id: Authenticated user ID from Clerk
     
     Returns:
-        Tasks grouped by status: {'TO-DO': [], 'PENDING': [], 'COMPLETED': []}
+        Tasks grouped by status: {'TO-DO': [], 'IN-PROGRESS': [], 'PENDING': [], 'COMPLETED': []}
     """
     try:
         # Fetch all tasks for the user
@@ -193,12 +193,13 @@ async def get_tasks(
         # Group tasks by status
         grouped_tasks = {
             "TO-DO": [],
+            "IN-PROGRESS": [],
             "PENDING": [],
             "COMPLETED": []
         }
         
         for task in tasks:
-            status = task.get("status", "PENDING")
+            status = task.get("status", "IN-PROGRESS")
             if status in grouped_tasks:
                 grouped_tasks[status].append(task)
         
