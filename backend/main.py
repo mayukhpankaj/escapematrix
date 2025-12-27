@@ -474,6 +474,102 @@ Each task object must have:
         raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
 
 
+@app.post("/api/make-call")
+async def make_call(
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Initiate a phone call via Retell AI with pending and in-progress tasks
+    
+    Args:
+        user_id: Authenticated user ID
+    
+    Returns:
+        Call initiation response
+    """
+    try:
+        # Get all tasks for the user
+        tasks_response = supabase.table("tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+        
+        all_tasks = tasks_response.data if tasks_response.data else []
+        
+        # Filter for TO-DO and IN-PROGRESS tasks
+        pending_tasks = [
+            task for task in all_tasks 
+            if task.get("status") in ["TO-DO", "IN-PROGRESS"]
+        ]
+        
+        if not pending_tasks:
+            raise HTTPException(status_code=400, detail="No pending or in-progress tasks found")
+        
+        # Format tasks into text: id--taskname--task description--task-type--taskstatus
+        task_lines = []
+        for task in pending_tasks:
+            task_line = f"{task.get('id', 'N/A')}--{task.get('task_name', 'N/A')}--{task.get('task_description', 'N/A')}--{task.get('task_type', 'N/A')}--{task.get('status', 'N/A')}"
+            task_lines.append(task_line)
+        
+        task_text = "\n".join(task_lines)
+        
+        # Get user name (you might need to fetch this from Clerk or store it)
+        # For now, using user_id as a placeholder
+        user_name = user_id  # Replace with actual user name if available
+        
+        # Retell AI configuration
+        retell_api_key = "key_18067d4c14f5953706d59c185f90"
+        retell_url = "https://api.retellai.com/v2/create-phone-call"
+        
+        # Prepare Retell AI request
+        retell_payload = {
+            "from_number": "+918071387392",
+            "to_number": "+919024175580",
+            "agent_id": "agent_7643fe36677ac912003811b209",
+            "dynamic_variables": {
+                "user_name": user_name,
+                "task_list": task_text
+            }
+        }
+        
+        # Make the call to Retell AI
+        async with httpx.AsyncClient() as client:
+            retell_response = await client.post(
+                retell_url,
+                headers={
+                    "Authorization": f"Bearer {retell_api_key}",
+                    "Content-Type": "application/json"
+                },
+                json=retell_payload,
+                timeout=30.0
+            )
+            
+            if retell_response.status_code != 200 and retell_response.status_code != 201:
+                error_detail = retell_response.text
+                try:
+                    error_json = retell_response.json()
+                    if "error" in error_json:
+                        error_detail = str(error_json["error"])
+                except:
+                    pass
+                raise HTTPException(
+                    status_code=retell_response.status_code,
+                    detail=f"Retell AI Error: {error_detail}"
+                )
+            
+            result = retell_response.json()
+            
+            return {
+                "success": True,
+                "message": "Call initiated successfully",
+                "call_id": result.get("call_id"),
+                "tasks_count": len(pending_tasks),
+                "retell_response": result
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error initiating call: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
