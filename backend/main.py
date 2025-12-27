@@ -41,6 +41,38 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 CLERK_PEM_PUBLIC_KEY = os.getenv("CLERK_PEM_PUBLIC_KEY", "")
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
 
+# Gemini configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY is not set in environment variables")
+
+# Initialize Gemini client
+gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+
+
+# AI Response Schema
+class AITask(BaseModel):
+    """Task schema for AI-generated tasks"""
+    task_name: str
+    task_description: str
+    task_type: Literal["LONG_TERM", "SHORT_TERM"]
+    status: Literal["TO-DO", "IN-PROGRESS", "DONE"]
+    priority: Literal[
+        "URGENT-IMPORTANT",
+        "URGENT-NOTIMPORTANT",
+        "NOTURGENT-IMPORTANT",
+        "NOTURGENT-NOTIMPORTANT"
+    ]
+    repetition_days: List[str]
+    repetition_time: str
+
+
+class AIResponse(BaseModel):
+    """Response schema for AI agent"""
+    type: Literal["MESSAGE", "PLAN", "CREATETASKS"]
+    message: str
+    tasks: List[AITask]
+
 
 # Pydantic Models
 class TaskCreate(BaseModel):
