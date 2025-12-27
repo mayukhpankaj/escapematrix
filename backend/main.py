@@ -387,19 +387,73 @@ Rules:
 - Think carefully before creating tasks
 """
         
+        # Define the response schema as a dict for google-genai
+        response_schema = {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": ["MESSAGE", "PLAN", "CREATETASKS"]
+                },
+                "message": {"type": "string"},
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "task_name": {"type": "string"},
+                            "task_description": {"type": "string"},
+                            "task_type": {
+                                "type": "string",
+                                "enum": ["LONG_TERM", "SHORT_TERM"]
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": ["TO-DO", "IN-PROGRESS", "DONE"]
+                            },
+                            "priority": {
+                                "type": "string",
+                                "enum": [
+                                    "URGENT-IMPORTANT",
+                                    "URGENT-NOTIMPORTANT",
+                                    "NOTURGENT-IMPORTANT",
+                                    "NOTURGENT-NOTIMPORTANT"
+                                ]
+                            },
+                            "repetition_days": {
+                                "type": "array",
+                                "items": {"type": "string"}
+                            },
+                            "repetition_time": {"type": "string"}
+                        },
+                        "required": [
+                            "task_name",
+                            "task_description",
+                            "task_type",
+                            "status",
+                            "priority",
+                            "repetition_days",
+                            "repetition_time"
+                        ]
+                    }
+                }
+            },
+            "required": ["type", "message", "tasks"]
+        }
+        
         # Call Gemini API
         response = gemini_client.models.generate_content(
             model="gemini-2.0-flash-exp",
             contents=query,
             config={
                 "response_mime_type": "application/json",
-                "response_schema": AIResponse,
+                "response_schema": response_schema,
                 "system_instruction": system_instruction,
             },
         )
         
         # Parse the response
-        ai_response = response.parsed
+        ai_response = json.loads(response.text)
         
         # Return the structured response
         return {
