@@ -391,7 +391,9 @@ Each task object must have:
         model = genai.GenerativeModel(
             model_name='gemini-2.0-flash-exp',
             generation_config={
-                "response_mime_type": "application/json"
+                "response_mime_type": "application/json",
+                "temperature": 0.3,
+                "max_output_tokens": 2048,
             },
             system_instruction=system_instruction
         )
