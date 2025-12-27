@@ -323,20 +323,26 @@ async def process_query(
     user_id: str = Depends(verify_clerk_token)
 ):
     """
-    Process AI query from user using Gemini API
+    Process AI query from user using Gemini API with conversation history
     
     Args:
-        query_data: Dictionary containing 'query' field
+        query_data: Dictionary containing 'messages' array
         user_id: Authenticated user ID
     
     Returns:
         AI response with type, message, and optional tasks
     """
     try:
+        # Accept either 'query' (old format) or 'messages' (new format)
+        messages = query_data.get("messages", [])
         query = query_data.get("query", "")
         
-        if not query:
-            raise HTTPException(status_code=400, detail="Query is required")
+        # Convert old format to new format for backward compatibility
+        if query and not messages:
+            messages = [{"role": "user", "content": query}]
+        
+        if not messages:
+            raise HTTPException(status_code=400, detail="Messages array is required")
         
         # Define the system instruction for the AI agent
         system_instruction = """YOU ARE A TASK MANAGER AGENT FOR A TODO APP.
@@ -390,8 +396,29 @@ Each task object must have:
             system_instruction=system_instruction
         )
         
-        # Generate response
-        response = model.generate_content(query)
+        # Convert messages to Gemini format
+        # Frontend sends: [{"role": "user", "content": "..."}, {"role": "ai", "content": "..."}]
+        # Gemini expects: [{"role": "user", "parts": [{"text": "..."}]}, {"role": "model", "parts": [{"text": "..."}]}]
+        gemini_messages = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            
+            # Map 'ai' role to 'model' for Gemini
+            if role == "ai":
+                role = "model"
+            
+            gemini_messages.append({
+                "role": role,
+                "parts": [{"text": content}]
+            })
+        
+        # Start a chat session with history
+        chat = model.start_chat(history=gemini_messages[:-1])  # All messages except the last one
+        
+        # Send the last message
+        last_message = gemini_messages[-1]["parts"][0]["text"]
+        response = chat.send_message(last_message)
         
         # Parse the JSON response
         ai_response = json.loads(response.text)
