@@ -50,30 +50,6 @@ EMERGENT_API_URL = "https://api.emergent.sh/v1/chat/completions"
 GEMINI_MODEL = "gemini-2.0-flash-exp"
 
 
-# AI Response Schema
-class AITask(BaseModel):
-    """Task schema for AI-generated tasks"""
-    task_name: str
-    task_description: str
-    task_type: Literal["LONG_TERM", "SHORT_TERM"]
-    status: Literal["TO-DO", "IN-PROGRESS", "DONE"]
-    priority: Literal[
-        "URGENT-IMPORTANT",
-        "URGENT-NOTIMPORTANT",
-        "NOTURGENT-IMPORTANT",
-        "NOTURGENT-NOTIMPORTANT"
-    ]
-    repetition_days: List[str]
-    repetition_time: str
-
-
-class AIResponse(BaseModel):
-    """Response schema for AI agent"""
-    type: Literal["MESSAGE", "PLAN", "CREATETASKS"]
-    message: str
-    tasks: List[AITask]
-
-
 # Pydantic Models
 class TaskCreate(BaseModel):
     """Model for creating a new task"""
