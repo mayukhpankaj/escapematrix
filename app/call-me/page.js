@@ -41,12 +41,17 @@ export default function CallMePage() {
 
     try {
       const token = await getToken()
+      
+      // Get user's full name, fallback to firstName or email
+      const userName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress || 'User'
+      
       const response = await fetch(`${API_BASE}/make-call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+        body: JSON.stringify({ user_name: userName }),
       })
 
       const data = await response.json()
