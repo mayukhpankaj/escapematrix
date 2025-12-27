@@ -23,28 +23,28 @@ export default function LoginPage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-gray-800 text-xl">Loading...</div>
       </div>
     )
   }
 
   if (isSignedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="text-white text-xl">Redirecting...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-gray-800 text-xl">Redirecting...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
       <div className="mb-8 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">Escape Matrix</h1>
-        <p className="text-xl text-gray-400">Break free from bad habits. Build your future.</p>
+        <h1 className="text-5xl md:text-6xl font-bold text-black mb-4">Escape Matrix</h1>
+        <p className="text-xl text-gray-700">Break free from bad habits. Build your future.</p>
       </div>
       
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-200">
         <SignUp 
           appearance={{
             elements: {
@@ -57,7 +57,7 @@ export default function LoginPage() {
         />
       </div>
       
-      <div className="mt-8 text-center text-gray-400">
+      <div className="mt-8 text-center text-gray-600">
         <p className="text-sm">Sign up with Google to get started</p>
       </div>
     </div>
