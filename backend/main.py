@@ -323,7 +323,7 @@ async def process_query(
     user_id: str = Depends(verify_clerk_token)
 ):
     """
-    Process AI query from user using Gemini API via Emergent Universal Key
+    Process AI query from user using Gemini API
     
     Args:
         query_data: Dictionary containing 'query' field
@@ -381,58 +381,27 @@ Each task object must have:
 }
 """
         
-        # Call Emergent API
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {EMERGENT_API_KEY}"
-        }
+        # Create the model with JSON mode
+        model = genai.GenerativeModel(
+            model_name='gemini-2.0-flash-exp',
+            generation_config={
+                "response_mime_type": "application/json"
+            },
+            system_instruction=system_instruction
+        )
         
-        payload = {
-            "model": GEMINI_MODEL,
-            "messages": [
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": query}
-            ],
-            "response_format": {"type": "json_object"},
-            "temperature": 0.3
-        }
+        # Generate response
+        response = model.generate_content(query)
         
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                EMERGENT_API_URL,
-                headers=headers,
-                json=payload,
-                timeout=60.0
-            )
-            
-            if response.status_code != 200:
-                error_detail = response.text
-                try:
-                    error_json = response.json()
-                    if "error" in error_json:
-                        error_detail = str(error_json["error"])
-                except:
-                    pass
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Gemini API Error: {error_detail}"
-                )
-            
-            result = response.json()
-            
-            # Extract the content from the response
-            if "choices" in result and len(result["choices"]) > 0:
-                content = result["choices"][0]["message"]["content"]
-                ai_response = json.loads(content)
-                
-                # Return the structured response
-                return {
-                    "type": ai_response.get("type", "MESSAGE"),
-                    "message": ai_response.get("message", ""),
-                    "tasks": ai_response.get("tasks", [])
-                }
-            else:
-                raise HTTPException(status_code=500, detail="Invalid response from Gemini API")
+        # Parse the JSON response
+        ai_response = json.loads(response.text)
+        
+        # Return the structured response
+        return {
+            "type": ai_response.get("type", "MESSAGE"),
+            "message": ai_response.get("message", ""),
+            "tasks": ai_response.get("tasks", [])
+        }
     
     except HTTPException:
         raise
