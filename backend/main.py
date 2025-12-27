@@ -3,7 +3,7 @@ Escape Matrix - FastAPI Backend
 Handles all API endpoints for task management with Clerk authentication
 """
 import os
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field
 from supabase import create_client, Client
 import jwt
 from dotenv import load_dotenv
+from google import genai
+import json
 
 load_dotenv()
 
