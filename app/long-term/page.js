@@ -78,20 +78,22 @@ export default function LongTermPage() {
         <aside
           className={`
             fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40 border-r border-gray-200
-            w-64 transition-transform duration-300 ease-in-out
+            w-80 transition-transform duration-300 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           `}
         >
           <div className="p-6">
-            <div className="hidden lg:flex items-center justify-between mb-8">
+            <div className="hidden lg:flex items-center justify-between mb-8 gap-3">
               <Image 
                 src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
                 alt="Escape Matrix"
-                width={200}
-                height={48}
-                className="w-auto h-10 object-contain"
+                width={240}
+                height={58}
+                className="w-full h-auto object-contain max-w-[200px]"
               />
-              <UserButton afterSignOutUrl="/" />
+              <div className="flex-shrink-0">
+                <UserButton afterSignOutUrl="/" />
+              </div>
             </div>
 
             <nav className="space-y-2">

@@ -40,14 +40,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
-      <div className="mb-8 text-center">
+      <div className="mb-8 text-center w-full">
         <div className="flex justify-center mb-4">
           <Image 
             src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
             alt="Escape Matrix"
             width={500}
             height={120}
-            className="w-auto h-24 md:h-28 object-contain"
+            className="w-1/2 h-auto object-contain max-w-md"
             priority
           />
         </div>
