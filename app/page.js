@@ -62,8 +62,7 @@ export default function LoginPage() {
               card: "shadow-none"
             }
           }}
-          routing="path"
-          path="/"
+          routing="hash"
         />
       </div>
       
