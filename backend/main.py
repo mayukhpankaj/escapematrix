@@ -423,11 +423,44 @@ Each task object must have:
         # Parse the JSON response
         ai_response = json.loads(response.text)
         
+        response_type = ai_response.get("type", "MESSAGE")
+        
+        # If type is CREATETASKS, automatically create tasks in database
+        created_tasks = []
+        if response_type == "CREATETASKS":
+            tasks = ai_response.get("tasks", [])
+            
+            for task in tasks:
+                try:
+                    # Prepare task data with user_id
+                    task_data = {
+                        "user_id": user_id,
+                        "task_name": task.get("task_name", ""),
+                        "task_description": task.get("task_description", ""),
+                        "task_type": task.get("task_type", "SHORT_TERM"),
+                        "status": task.get("status", "TO-DO"),
+                        "priority": task.get("priority", "NOTURGENT-NOTIMPORTANT"),
+                        "repetition_days": task.get("repetition_days", []),
+                        "repetition_time": task.get("repetition_time", ""),
+                    }
+                    
+                    # Insert into Supabase
+                    task_response = supabase.table("tasks").insert(task_data).execute()
+                    
+                    if task_response.data:
+                        created_tasks.append(task_response.data[0])
+                
+                except Exception as task_error:
+                    # Log error but continue with other tasks
+                    print(f"Error creating task: {str(task_error)}")
+                    continue
+        
         # Return the structured response
         return {
-            "type": ai_response.get("type", "MESSAGE"),
+            "type": response_type,
             "message": ai_response.get("message", ""),
-            "tasks": ai_response.get("tasks", [])
+            "tasks": created_tasks if response_type == "CREATETASKS" else ai_response.get("tasks", []),
+            "tasks_created": len(created_tasks) if response_type == "CREATETASKS" else 0
         }
     
     except HTTPException:
