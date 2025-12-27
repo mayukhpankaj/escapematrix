@@ -523,7 +523,7 @@ async def make_call(
             "from_number": "+918071387392",
             "to_number": "+919024175580",
             "agent_id": "agent_7643fe36677ac912003811b209",
-            "dynamic_variables": {
+            "metadata": {
                 "user_name": user_name,
                 "task_list": task_text
             }
