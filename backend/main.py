@@ -13,6 +13,7 @@ import jwt
 from dotenv import load_dotenv
 import google.generativeai as genai
 import json
+import httpx
 
 load_dotenv()
 
