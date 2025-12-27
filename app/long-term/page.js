@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
-import { Menu, X, ListTodo, Target, Plus } from 'lucide-react'
+import { Menu, X, ListTodo, Target, Plus, Sparkles } from 'lucide-react'
 import TaskCard from '@/components/TaskCard'
 import TaskFormModal from '@/components/TaskFormModal'
 import Image from 'next/image'
@@ -116,6 +116,13 @@ export default function LongTermPage() {
                 >
                   <Target className="w-5 h-5" />
                   Long Term Goals
+                </button>
+                <button
+                  onClick={() => router.push('/ai')}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  AI
                 </button>
               </nav>
             </div>
