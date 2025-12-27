@@ -476,18 +476,24 @@ Each task object must have:
 
 @app.post("/api/make-call")
 async def make_call(
+    request_data: dict,
     user_id: str = Depends(verify_clerk_token)
 ):
     """
     Initiate a phone call via Retell AI with pending and in-progress tasks
     
     Args:
+        request_data: Dictionary containing optional 'user_name' field
         user_id: Authenticated user ID
     
     Returns:
         Call initiation response
     """
     try:
+        # Get user name from request body, fallback to user_id if not provided
+        user_name = request_data.get("user_name", user_id)
+        user_name = str(user_name)
+        
         # Get all tasks for the user
         tasks_response = supabase.table("tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
         
@@ -511,10 +517,6 @@ async def make_call(
         
         task_text = "\n".join(task_lines)
         task_text = str(task_text)
-        
-        # Get user name (you might need to fetch this from Clerk or store it)
-        # For now, using user_id as a placeholder
-        user_name = str(user_id)  # Replace with actual user name if available
         
         # Retell AI configuration
         retell_api_key = "key_18067d4c14f5953706d59c185f90"
