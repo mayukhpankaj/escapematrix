@@ -307,6 +307,43 @@ async def delete_task(
         raise HTTPException(status_code=500, detail=f"Error deleting task: {str(e)}")
 
 
+@app.post("/api/processquery")
+async def process_query(
+    query_data: dict,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Process AI query from user
+    
+    Args:
+        query_data: Dictionary containing 'query' field
+        user_id: Authenticated user ID
+    
+    Returns:
+        AI response
+    """
+    try:
+        query = query_data.get("query", "")
+        
+        if not query:
+            raise HTTPException(status_code=400, detail="Query is required")
+        
+        # TODO: Implement AI processing logic here
+        # For now, return a simple response
+        response_text = f"Thank you for your question: '{query}'. This is a placeholder response. AI processing will be implemented soon!"
+        
+        return {
+            "response": response_text,
+            "query": query,
+            "user_id": user_id
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
