@@ -58,19 +58,11 @@ export default function LongTermPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-50 border-b border-gray-200">
+      {/* Mobile Header - Minimal with just burger */}
+      <div className="lg:hidden bg-transparent px-4 py-3 flex items-center justify-start sticky top-0 z-50">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <Image 
-          src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
-          alt="Escape Matrix"
-          width={180}
-          height={43}
-          className="w-auto h-9 object-contain"
-        />
-        <UserButton afterSignOutUrl="/" />
       </div>
 
       <div className="flex">
@@ -78,40 +70,50 @@ export default function LongTermPage() {
         <aside
           className={`
             fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40 border-r border-gray-200
-            w-80 transition-transform duration-300 ease-in-out
+            w-80 transition-transform duration-300 ease-in-out flex flex-col
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           `}
         >
-          <div className="p-6">
-            <div className="hidden lg:flex items-center justify-between mb-8 gap-3">
-              <Image 
-                src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
-                alt="Escape Matrix"
-                width={240}
-                height={58}
-                className="w-full h-auto object-contain max-w-[200px]"
-              />
-              <div className="flex-shrink-0">
-                <UserButton afterSignOutUrl="/" />
+          {/* Top Section - Logo and Navigation */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6">
+              {/* Logo */}
+              <div className="mb-8">
+                <Image 
+                  src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
+                  alt="Escape Matrix"
+                  width={280}
+                  height={67}
+                  className="w-full h-auto object-contain"
+                />
               </div>
-            </div>
 
-            <nav className="space-y-2">
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-              >
-                <ListTodo className="w-5 h-5" />
-                Dashboard
-              </button>
-              <button
-                onClick={() => router.push('/long-term')}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
-              >
-                <Target className="w-5 h-5" />
-                Long Term Goals
-              </button>
-            </nav>
+              {/* Navigation */}
+              <nav className="space-y-2">
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+                >
+                  <ListTodo className="w-5 h-5" />
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => router.push('/long-term')}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
+                >
+                  <Target className="w-5 h-5" />
+                  Long Term Goals
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          {/* Bottom Section - User Profile */}
+          <div className="p-6 border-t border-gray-200">
+            <div className="flex items-center gap-3">
+              <UserButton afterSignOutUrl="/" />
+              <span className="text-sm text-gray-600">Profile</span>
+            </div>
           </div>
         </aside>
 
