@@ -502,17 +502,19 @@ async def make_call(
         if not pending_tasks:
             raise HTTPException(status_code=400, detail="No pending or in-progress tasks found")
         
-        # Format tasks into text: id--taskname--task description--task-type--taskstatus
+        # Format tasks into LLM-friendly text
         task_lines = []
         for task in pending_tasks:
-            task_line = f"{task.get('id', 'N/A')}--{task.get('task_name', 'N/A')}--{task.get('task_description', 'N/A')}--{task.get('task_type', 'N/A')}--{task.get('status', 'N/A')}"
-            task_lines.append(task_line)
+            task_lines.append(
+                f"- {task.get('task_name')} ({task.get('status')}): {task.get('task_description')}"
+            )
         
         task_text = "\n".join(task_lines)
+        task_text = str(task_text)
         
         # Get user name (you might need to fetch this from Clerk or store it)
         # For now, using user_id as a placeholder
-        user_name = user_id  # Replace with actual user name if available
+        user_name = str(user_id)  # Replace with actual user name if available
         
         # Retell AI configuration
         retell_api_key = "key_18067d4c14f5953706d59c185f90"
@@ -523,7 +525,7 @@ async def make_call(
             "from_number": "+918071387392",
             "to_number": "+919024175580",
             "agent_id": "agent_7643fe36677ac912003811b209",
-            "metadata": {
+            "dynamic_variables": {
                 "user_name": user_name,
                 "task_list": task_text
             }
