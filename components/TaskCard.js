@@ -80,10 +80,13 @@ export default function TaskCard({ task, onUpdate }) {
           {/* Task Title */}
           <div className="flex items-start justify-between gap-2">
             <h4 className="font-semibold text-black line-clamp-2">{task.task_name}</h4>
-            <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
-              {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
-              {priorityLabels[task.priority]?.split(' ')[0]}
-            </Badge>
+            {/* Only show priority for SHORT_TERM tasks */}
+            {task.task_type === 'SHORT_TERM' && (
+              <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
+                {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
+                {priorityLabels[task.priority]?.split(' ')[0]}
+              </Badge>
+            )}
           </div>
 
           {/* Task Description */}
@@ -96,13 +99,14 @@ export default function TaskCard({ task, onUpdate }) {
             <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
               {task.task_type === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
             </Badge>
-            {task.repetition_days && task.repetition_days.length > 0 && (
+            {/* Only show repetition for SHORT_TERM tasks */}
+            {task.task_type === 'SHORT_TERM' && task.repetition_days && task.repetition_days.length > 0 && (
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                 <Clock className="w-3 h-3 mr-1" />
                 {task.repetition_days.join(', ')}
               </Badge>
             )}
-            {task.repetition_time && (
+            {task.task_type === 'SHORT_TERM' && task.repetition_time && (
               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                 {task.repetition_time}
               </Badge>
