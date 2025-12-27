@@ -531,6 +531,12 @@ async def make_call(
             }
         }
         
+        # Log the payload being sent to Retell AI
+        print("=" * 80)
+        print("RETELL AI CALL PAYLOAD:")
+        print(json.dumps(retell_payload, indent=2))
+        print("=" * 80)
+        
         # Make the call to Retell AI
         async with httpx.AsyncClient() as client:
             retell_response = await client.post(
