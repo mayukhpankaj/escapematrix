@@ -19,7 +19,7 @@ export default function TaskFormModal({ onClose, onTaskCreated }) {
     task_description: '',
     task_type: 'SHORT_TERM',
     priority: 'NOTURGENT-NOTIMPORTANT',
-    status: 'IN-PROGRESS',
+    status: 'TO-DO',
     repetition_days: [],
     repetition_time: '',
   })

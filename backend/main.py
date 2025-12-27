@@ -51,8 +51,8 @@ class TaskCreate(BaseModel):
         pattern="^(URGENT-IMPORTANT|URGENT-NOTIMPORTANT|NOTURGENT-IMPORTANT|NOTURGENT-NOTIMPORTANT)$"
     )
     status: str = Field(
-        default="IN-PROGRESS",
-        pattern="^(TO-DO|PENDING|IN-PROGRESS|COMPLETED)$"
+        default="TO-DO",
+        pattern="^(TO-DO|IN-PROGRESS|COMPLETED)$"
     )
     repetition_days: Optional[List[str]] = None  # ['MONDAY', 'WEDNESDAY', 'FRIDAY']
     repetition_time: Optional[str] = None  # '09:00 AM'
@@ -182,7 +182,7 @@ async def get_tasks(
         user_id: Authenticated user ID from Clerk
     
     Returns:
-        Tasks grouped by status: {'TO-DO': [], 'IN-PROGRESS': [], 'PENDING': [], 'COMPLETED': []}
+        Tasks grouped by status: {'TO-DO': [], 'IN-PROGRESS': [], 'COMPLETED': []}
     """
     try:
         # Fetch all tasks for the user
@@ -194,12 +194,11 @@ async def get_tasks(
         grouped_tasks = {
             "TO-DO": [],
             "IN-PROGRESS": [],
-            "PENDING": [],
             "COMPLETED": []
         }
         
         for task in tasks:
-            status = task.get("status", "IN-PROGRESS")
+            status = task.get("status", "TO-DO")
             if status in grouped_tasks:
                 grouped_tasks[status].append(task)
         

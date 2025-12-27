@@ -80,18 +80,10 @@ export default function TaskCard({ task, onUpdate }) {
           {/* Task Title */}
           <div className="flex items-start justify-between gap-2">
             <h4 className="font-semibold text-gray-900 line-clamp-2">{task.task_name}</h4>
-            <div className="flex gap-1 flex-col items-end">
-              <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
-                {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
-                {priorityLabels[task.priority]?.split(' ')[0]}
-              </Badge>
-              {task.status === 'IN-PROGRESS' && (
-                <Badge className="bg-blue-100 text-blue-800 text-xs">
-                  <Clock className="w-3 h-3 mr-1" />
-                  In Progress
-                </Badge>
-              )}
-            </div>
+            <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
+              {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
+              {priorityLabels[task.priority]?.split(' ')[0]}
+            </Badge>
           </div>
 
           {/* Task Description */}
@@ -119,7 +111,7 @@ export default function TaskCard({ task, onUpdate }) {
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-2 border-t">
-            {(task.status === 'TO-DO' || task.status === 'PENDING') && (
+            {task.status === 'TO-DO' && (
               <Button
                 onClick={() => updateTaskStatus('IN-PROGRESS')}
                 disabled={loading}
@@ -143,7 +135,7 @@ export default function TaskCard({ task, onUpdate }) {
             )}
             {task.status === 'COMPLETED' && (
               <Button
-                onClick={() => updateTaskStatus('IN-PROGRESS')}
+                onClick={() => updateTaskStatus('TO-DO')}
                 disabled={loading}
                 size="sm"
                 variant="outline"
