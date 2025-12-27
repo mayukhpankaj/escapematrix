@@ -53,18 +53,18 @@ export default function OnboardingPage() {
   const Icon = step.icon
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 px-4 py-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 py-8">
       <div className="w-full max-w-2xl">
         {/* Main content */}
         <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 mb-8">
           <div className="flex flex-col items-center text-center">
             {/* Icon */}
-            <div className="mb-6 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full p-6">
+            <div className="mb-6 bg-black rounded-full p-6">
               <Icon className="w-16 h-16 text-white" />
             </div>
 
             {/* Title */}
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
               {step.title}
             </h2>
 
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
               className={`h-2 rounded-full transition-all duration-300 ${
                 index === currentStep 
                   ? 'w-8 bg-white' 
-                  : 'w-2 bg-white/40'
+                  : 'w-2 bg-gray-600'
               }`}
             />
           ))}
@@ -94,7 +94,7 @@ export default function OnboardingPage() {
           <Button
             onClick={handleNext}
             size="lg"
-            className="bg-white text-purple-900 hover:bg-purple-50 font-semibold px-12 py-6 text-lg rounded-full shadow-lg"
+            className="bg-black hover:bg-gray-800 text-white font-semibold px-12 py-6 text-lg rounded-full shadow-lg"
           >
             {currentStep < onboardingSteps.length - 1 ? 'Next' : 'Get Started'}
           </Button>

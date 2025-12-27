@@ -56,13 +56,13 @@ export default function LongTermPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+      <div className="lg:hidden bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-50 border-b border-gray-200">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <h1 className="text-xl font-bold text-purple-900">Escape Matrix</h1>
+        <h1 className="text-xl font-bold text-black">Escape Matrix</h1>
         <UserButton afterSignOutUrl="/" />
       </div>
 
@@ -70,14 +70,14 @@ export default function LongTermPage() {
         {/* Sidebar */}
         <aside
           className={`
-            fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40
+            fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40 border-r border-gray-200
             w-64 transition-transform duration-300 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           `}
         >
           <div className="p-6">
             <div className="hidden lg:flex items-center justify-between mb-8">
-              <h1 className="text-2xl font-bold text-purple-900">Escape Matrix</h1>
+              <h1 className="text-2xl font-bold text-black">Escape Matrix</h1>
               <UserButton afterSignOutUrl="/" />
             </div>
 
@@ -91,7 +91,7 @@ export default function LongTermPage() {
               </button>
               <button
                 onClick={() => router.push('/long-term')}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-purple-100 text-purple-900 rounded-lg font-medium"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
               >
                 <Target className="w-5 h-5" />
                 Long Term Goals
@@ -114,12 +114,12 @@ export default function LongTermPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900">Long Term Goals</h2>
-                <p className="text-gray-600 mt-1">Big picture goals that shape your future</p>
+                <h2 className="text-3xl font-bold text-black">Long Term Goals</h2>
+                <p className="text-gray-500 mt-1">Big picture goals that shape your future</p>
               </div>
               <Button
                 onClick={() => setShowTaskModal(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-6 shadow-lg"
+                className="bg-black hover:bg-gray-800 text-white rounded-full px-6 py-6 shadow-lg"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 New Goal
@@ -137,13 +137,13 @@ export default function LongTermPage() {
                     <TaskCard key={task.id} task={task} onUpdate={fetchLongTermTasks} />
                   ))
                 ) : (
-                  <div className="col-span-full bg-white rounded-2xl p-12 text-center">
+                  <div className="col-span-full bg-white rounded-2xl p-12 text-center border border-gray-200">
                     <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Long Term Goals Yet</h3>
-                    <p className="text-gray-600 mb-6">Start planning your future by creating your first long-term goal.</p>
+                    <h3 className="text-xl font-semibold text-black mb-2">No Long Term Goals Yet</h3>
+                    <p className="text-gray-500 mb-6">Start planning your future by creating your first long-term goal.</p>
                     <Button
                       onClick={() => setShowTaskModal(true)}
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      className="bg-black hover:bg-gray-800 text-white"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Create Your First Goal

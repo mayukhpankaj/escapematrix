@@ -10,10 +10,10 @@ import { Clock, CheckCircle, Trash2, AlertCircle } from 'lucide-react'
 const API_BASE = '/backend-api/api'
 
 const priorityColors = {
-  'URGENT-IMPORTANT': 'bg-red-100 text-red-800',
-  'URGENT-NOTIMPORTANT': 'bg-orange-100 text-orange-800',
-  'NOTURGENT-IMPORTANT': 'bg-blue-100 text-blue-800',
-  'NOTURGENT-NOTIMPORTANT': 'bg-gray-100 text-gray-800',
+  'URGENT-IMPORTANT': 'bg-gray-900 text-white',
+  'URGENT-NOTIMPORTANT': 'bg-gray-700 text-white',
+  'NOTURGENT-IMPORTANT': 'bg-gray-500 text-white',
+  'NOTURGENT-NOTIMPORTANT': 'bg-gray-300 text-gray-800',
 }
 
 const priorityLabels = {
@@ -74,12 +74,12 @@ export default function TaskCard({ task, onUpdate }) {
   }
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow border border-gray-200">
       <CardContent className="p-4">
         <div className="space-y-3">
           {/* Task Title */}
           <div className="flex items-start justify-between gap-2">
-            <h4 className="font-semibold text-gray-900 line-clamp-2">{task.task_name}</h4>
+            <h4 className="font-semibold text-black line-clamp-2">{task.task_name}</h4>
             <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
               {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
               {priorityLabels[task.priority]?.split(' ')[0]}
@@ -93,30 +93,30 @@ export default function TaskCard({ task, onUpdate }) {
 
           {/* Task Type & Repetition */}
           <div className="flex flex-wrap gap-2 text-xs">
-            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+            <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
               {task.task_type === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
             </Badge>
             {task.repetition_days && task.repetition_days.length > 0 && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
                 <Clock className="w-3 h-3 mr-1" />
                 {task.repetition_days.join(', ')}
               </Badge>
             )}
             {task.repetition_time && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
                 {task.repetition_time}
               </Badge>
             )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 pt-2 border-t">
+          <div className="flex gap-2 pt-2 border-t border-gray-200">
             {task.status === 'TO-DO' && (
               <Button
                 onClick={() => updateTaskStatus('IN-PROGRESS')}
                 disabled={loading}
                 size="sm"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1 bg-black hover:bg-gray-800 text-white"
               >
                 <Clock className="w-4 h-4 mr-1" />
                 Start
@@ -127,7 +127,7 @@ export default function TaskCard({ task, onUpdate }) {
                 onClick={() => updateTaskStatus('COMPLETED')}
                 disabled={loading}
                 size="sm"
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                className="flex-1 bg-black hover:bg-gray-800 text-white"
               >
                 <CheckCircle className="w-4 h-4 mr-1" />
                 Complete
@@ -139,7 +139,7 @@ export default function TaskCard({ task, onUpdate }) {
                 disabled={loading}
                 size="sm"
                 variant="outline"
-                className="flex-1"
+                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Reopen
               </Button>
@@ -149,7 +149,7 @@ export default function TaskCard({ task, onUpdate }) {
               disabled={loading}
               size="sm"
               variant="destructive"
-              className="px-3"
+              className="px-3 bg-gray-800 hover:bg-black text-white"
             >
               <Trash2 className="w-4 h-4" />
             </Button>

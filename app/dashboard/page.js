@@ -80,13 +80,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+      <div className="lg:hidden bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-50 border-b border-gray-200">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <h1 className="text-xl font-bold text-purple-900">Escape Matrix</h1>
+        <h1 className="text-xl font-bold text-black">Escape Matrix</h1>
         <UserButton afterSignOutUrl="/" />
       </div>
 
@@ -94,21 +94,21 @@ export default function DashboardPage() {
         {/* Sidebar */}
         <aside
           className={`
-            fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40
+            fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40 border-r border-gray-200
             w-64 transition-transform duration-300 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           `}
         >
           <div className="p-6">
             <div className="hidden lg:flex items-center justify-between mb-8">
-              <h1 className="text-2xl font-bold text-purple-900">Escape Matrix</h1>
+              <h1 className="text-2xl font-bold text-black">Escape Matrix</h1>
               <UserButton afterSignOutUrl="/" />
             </div>
 
             <nav className="space-y-2">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-purple-100 text-purple-900 rounded-lg font-medium"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
               >
                 <ListTodo className="w-5 h-5" />
                 Dashboard
@@ -138,12 +138,12 @@ export default function DashboardPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900">My Tasks</h2>
-                <p className="text-gray-600 mt-1">Track your daily habits and goals</p>
+                <h2 className="text-3xl font-bold text-black">My Tasks</h2>
+                <p className="text-gray-500 mt-1">Track your daily habits and goals</p>
               </div>
               <Button
                 onClick={() => setShowTaskModal(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-6 shadow-lg"
+                className="bg-black hover:bg-gray-800 text-white rounded-full px-6 py-6 shadow-lg"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 New Task
@@ -159,9 +159,9 @@ export default function DashboardPage() {
                 {/* TO-DO Column */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <ListTodo className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">To-Do</h3>
-                    <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                    <ListTodo className="w-5 h-5 text-black" />
+                    <h3 className="text-lg font-semibold text-black">To-Do</h3>
+                    <span className="bg-gray-200 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                       {tasks['TO-DO']?.length || 0}
                     </span>
                   </div>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
                         <TaskCard key={task.id} task={task} onUpdate={fetchTasks} />
                       ))
                     ) : (
-                      <div className="bg-white rounded-lg p-6 text-center text-gray-500">
+                      <div className="bg-white rounded-lg p-6 text-center text-gray-500 border border-gray-200">
                         No tasks to do
                       </div>
                     )}
@@ -181,9 +181,9 @@ export default function DashboardPage() {
                 {/* IN-PROGRESS Column */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-5 h-5 text-orange-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">In-Progress</h3>
-                    <span className="bg-orange-100 text-orange-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                    <Clock className="w-5 h-5 text-black" />
+                    <h3 className="text-lg font-semibold text-black">In-Progress</h3>
+                    <span className="bg-gray-200 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                       {tasks['IN-PROGRESS']?.length || 0}
                     </span>
                   </div>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                         <TaskCard key={task.id} task={task} onUpdate={fetchTasks} />
                       ))
                     ) : (
-                      <div className="bg-white rounded-lg p-6 text-center text-gray-500">
+                      <div className="bg-white rounded-lg p-6 text-center text-gray-500 border border-gray-200">
                         No tasks in progress
                       </div>
                     )}
@@ -203,9 +203,9 @@ export default function DashboardPage() {
                 {/* COMPLETED Column */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Completed</h3>
-                    <span className="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-5 h-5 text-black" />
+                    <h3 className="text-lg font-semibold text-black">Completed</h3>
+                    <span className="bg-gray-200 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                       {tasks['COMPLETED']?.length || 0}
                     </span>
                   </div>
@@ -215,7 +215,7 @@ export default function DashboardPage() {
                         <TaskCard key={task.id} task={task} onUpdate={fetchTasks} />
                       ))
                     ) : (
-                      <div className="bg-white rounded-lg p-6 text-center text-gray-500">
+                      <div className="bg-white rounded-lg p-6 text-center text-gray-500 border border-gray-200">
                         No completed tasks
                       </div>
                     )}
