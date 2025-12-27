@@ -201,7 +201,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "AI Chat Endpoint - Process Query"
     - "AI Chat Interface"
   stuck_tasks: []
   test_all: false
