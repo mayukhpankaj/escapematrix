@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend Test for Escape Matrix App - AI Chat Endpoint
-Tests the /api/processquery endpoint with various scenarios
+Backend Test for Escape Matrix App - AI Chat Endpoint with Gemini Integration
+Tests the /api/processquery endpoint with Gemini API integration
 """
 import requests
 import json
@@ -26,9 +26,9 @@ def create_test_jwt(user_id="test_user_123"):
     token = jwt.encode(payload, "secret", algorithm="HS256")
     return token
 
-def test_ai_chat_valid_request():
-    """Test AI chat endpoint with valid request"""
-    print("🔍 Testing AI chat endpoint with valid request...")
+def test_ai_chat_plan_response():
+    """Test AI chat endpoint for PLAN response"""
+    print("🔍 Testing AI chat endpoint for PLAN response...")
     
     # Create test JWT token
     token = create_test_jwt("test_user_123")
@@ -38,14 +38,63 @@ def test_ai_chat_valid_request():
     }
     
     payload = {
-        "query": "How can I improve my productivity?"
+        "query": "I want to learn system design"
     }
     
     try:
         response = requests.post(f"{API_BASE_URL}/api/processquery", 
                                json=payload, 
                                headers=headers,
-                               timeout=10)
+                               timeout=30)  # Increased timeout for AI response
+        
+        print(f"   Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"   Response: {json.dumps(data, indent=2)}")
+            
+            # Verify response structure for new Gemini integration
+            assert "type" in data, "Response should contain 'type' field"
+            assert "message" in data, "Response should contain 'message' field"
+            assert "tasks" in data, "Response should contain 'tasks' field"
+            
+            # Verify response content for PLAN type
+            assert data["type"] in ["PLAN", "MESSAGE"], f"Expected PLAN or MESSAGE, got {data['type']}"
+            assert isinstance(data["message"], str), "Message should be a string"
+            assert isinstance(data["tasks"], list), "Tasks should be a list"
+            assert len(data["tasks"]) == 0, "Tasks should be empty for PLAN response"
+            
+            print("✅ PLAN response test passed!")
+            return True
+        else:
+            print(f"❌ Expected 200, got {response.status_code}")
+            print(f"   Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Test failed with exception: {e}")
+        return False
+
+def test_ai_chat_createtasks_response():
+    """Test AI chat endpoint for CREATETASKS response"""
+    print("\n🔍 Testing AI chat endpoint for CREATETASKS response...")
+    
+    # Create test JWT token
+    token = create_test_jwt("test_user_123")
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "query": "Yes, create those tasks for me to learn system design"
+    }
+    
+    try:
+        response = requests.post(f"{API_BASE_URL}/api/processquery", 
+                               json=payload, 
+                               headers=headers,
+                               timeout=30)  # Increased timeout for AI response
         
         print(f"   Status Code: {response.status_code}")
         
@@ -54,17 +103,46 @@ def test_ai_chat_valid_request():
             print(f"   Response: {json.dumps(data, indent=2)}")
             
             # Verify response structure
-            assert "response" in data, "Response should contain 'response' field"
-            assert "query" in data, "Response should contain 'query' field"
-            assert "user_id" in data, "Response should contain 'user_id' field"
+            assert "type" in data, "Response should contain 'type' field"
+            assert "message" in data, "Response should contain 'message' field"
+            assert "tasks" in data, "Response should contain 'tasks' field"
             
-            # Verify response content
-            assert data["query"] == payload["query"], "Query should match input"
-            assert data["user_id"] == "test_user_123", "User ID should match token"
-            assert "placeholder response" in data["response"].lower(), "Should contain placeholder text"
-            
-            print("✅ Valid request test passed!")
-            return True
+            # For CREATETASKS response, verify task structure
+            if data["type"] == "CREATETASKS":
+                assert isinstance(data["tasks"], list), "Tasks should be a list"
+                assert len(data["tasks"]) > 0, "Tasks should not be empty for CREATETASKS"
+                
+                # Verify task schema
+                for task in data["tasks"]:
+                    required_fields = ["task_name", "task_description", "task_type", "status", "priority", "repetition_days", "repetition_time"]
+                    for field in required_fields:
+                        assert field in task, f"Task should contain '{field}' field"
+                    
+                    # Verify task_type values
+                    assert task["task_type"] in ["LONG_TERM", "SHORT_TERM"], f"Invalid task_type: {task['task_type']}"
+                    
+                    # Verify status
+                    assert task["status"] == "TO-DO", f"Status should be TO-DO, got {task['status']}"
+                    
+                    # Verify priority format
+                    valid_priorities = ["URGENT-IMPORTANT", "URGENT-NOTIMPORTANT", "NOTURGENT-IMPORTANT", "NOTURGENT-NOTIMPORTANT"]
+                    assert task["priority"] in valid_priorities, f"Invalid priority: {task['priority']}"
+                    
+                    # Verify repetition fields based on task type
+                    if task["task_type"] == "LONG_TERM":
+                        assert task["repetition_days"] == [], f"LONG_TERM task should have empty repetition_days"
+                        assert task["repetition_time"] == "", f"LONG_TERM task should have empty repetition_time"
+                    elif task["task_type"] == "SHORT_TERM":
+                        assert isinstance(task["repetition_days"], list), "SHORT_TERM task should have repetition_days list"
+                        assert len(task["repetition_days"]) > 0, "SHORT_TERM task should have non-empty repetition_days"
+                        assert isinstance(task["repetition_time"], str), "SHORT_TERM task should have repetition_time string"
+                        assert task["repetition_time"] != "", "SHORT_TERM task should have non-empty repetition_time"
+                
+                print("✅ CREATETASKS response test passed!")
+                return True
+            else:
+                print(f"ℹ️  Got {data['type']} response instead of CREATETASKS - this is acceptable")
+                return True
         else:
             print(f"❌ Expected 200, got {response.status_code}")
             print(f"   Response: {response.text}")
