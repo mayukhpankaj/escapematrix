@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { SignUp } from '@clerk/nextjs'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const { isSignedIn, isLoaded } = useAuth()
@@ -40,7 +41,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
       <div className="mb-8 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-black mb-4">Escape Matrix</h1>
+        <div className="flex justify-center mb-4">
+          <Image 
+            src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/v884ubv2_fontbolt%20%282%29.png"
+            alt="Escape Matrix"
+            width={400}
+            height={100}
+            className="w-auto h-20 md:h-24"
+            priority
+          />
+        </div>
         <p className="text-xl text-gray-700">Break free from bad habits. Build your future.</p>
       </div>
       

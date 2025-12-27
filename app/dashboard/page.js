@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, Menu, X, CheckCircle2, Clock, ListTodo, Target } from 'lucide-react'
 import TaskCard from '@/components/TaskCard'
 import TaskFormModal from '@/components/TaskFormModal'
+import Image from 'next/image'
 
 const API_BASE = '/backend-api/api'
 
@@ -86,7 +87,13 @@ export default function DashboardPage() {
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <h1 className="text-xl font-bold text-black">Escape Matrix</h1>
+        <Image 
+          src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/v884ubv2_fontbolt%20%282%29.png"
+          alt="Escape Matrix"
+          width={150}
+          height={40}
+          className="w-auto h-8"
+        />
         <UserButton afterSignOutUrl="/" />
       </div>
 
@@ -101,7 +108,13 @@ export default function DashboardPage() {
         >
           <div className="p-6">
             <div className="hidden lg:flex items-center justify-between mb-8">
-              <h1 className="text-2xl font-bold text-black">Escape Matrix</h1>
+              <Image 
+                src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/v884ubv2_fontbolt%20%282%29.png"
+                alt="Escape Matrix"
+                width={180}
+                height={50}
+                className="w-auto h-10"
+              />
               <UserButton afterSignOutUrl="/" />
             </div>
 

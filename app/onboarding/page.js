@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Target, TrendingUp } from 'lucide-react'
+import Image from 'next/image'
 
 const onboardingSteps = [
   {
@@ -55,6 +56,17 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 py-8">
       <div className="w-full max-w-2xl">
+        {/* Logo at top */}
+        <div className="flex justify-center mb-8">
+          <Image 
+            src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/v884ubv2_fontbolt%20%282%29.png"
+            alt="Escape Matrix"
+            width={300}
+            height={80}
+            className="w-auto h-16 brightness-0 invert"
+          />
+        </div>
+
         {/* Main content */}
         <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 mb-8">
           <div className="flex flex-col items-center text-center">
