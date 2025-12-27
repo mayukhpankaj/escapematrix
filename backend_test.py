@@ -294,6 +294,55 @@ def test_ai_chat_empty_query():
         print(f"❌ Test failed with exception: {e}")
         return False
 
+def test_ai_chat_message_response():
+    """Test AI chat endpoint for MESSAGE response"""
+    print("\n🔍 Testing AI chat endpoint for MESSAGE response...")
+    
+    # Create test JWT token
+    token = create_test_jwt("test_user_123")
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "query": "Hello, how are you?"
+    }
+    
+    try:
+        response = requests.post(f"{API_BASE_URL}/api/processquery", 
+                               json=payload, 
+                               headers=headers,
+                               timeout=30)
+        
+        print(f"   Status Code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"   Response: {json.dumps(data, indent=2)}")
+            
+            # Verify response structure
+            assert "type" in data, "Response should contain 'type' field"
+            assert "message" in data, "Response should contain 'message' field"
+            assert "tasks" in data, "Response should contain 'tasks' field"
+            
+            # Verify response content
+            assert data["type"] in ["MESSAGE", "PLAN"], f"Expected MESSAGE or PLAN, got {data['type']}"
+            assert isinstance(data["message"], str), "Message should be a string"
+            assert isinstance(data["tasks"], list), "Tasks should be a list"
+            assert len(data["tasks"]) == 0, "Tasks should be empty for MESSAGE response"
+            
+            print("✅ MESSAGE response test passed!")
+            return True
+        else:
+            print(f"❌ Expected 200, got {response.status_code}")
+            print(f"   Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Test failed with exception: {e}")
+        return False
+
 def test_health_check():
     """Test the health check endpoint to ensure server is running"""
     print("\n🔍 Testing health check endpoint...")
