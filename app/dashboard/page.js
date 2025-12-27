@@ -100,7 +100,7 @@ export default function DashboardPage() {
         >
           {/* Top Section - Logo and Navigation */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-6">
+            <div className="p-6 pt-20 lg:pt-6">
               {/* Logo */}
               <div className="mb-8">
                 <Image 
