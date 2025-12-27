@@ -51,8 +51,8 @@ class TaskCreate(BaseModel):
         pattern="^(URGENT-IMPORTANT|URGENT-NOTIMPORTANT|NOTURGENT-IMPORTANT|NOTURGENT-NOTIMPORTANT)$"
     )
     status: str = Field(
-        default="PENDING",
-        pattern="^(TO-DO|PENDING|COMPLETED)$"
+        default="IN-PROGRESS",
+        pattern="^(TO-DO|PENDING|IN-PROGRESS|COMPLETED)$"
     )
     repetition_days: Optional[List[str]] = None  # ['MONDAY', 'WEDNESDAY', 'FRIDAY']
     repetition_time: Optional[str] = None  # '09:00 AM'
