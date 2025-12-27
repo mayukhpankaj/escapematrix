@@ -46,8 +46,8 @@ EMERGENT_API_KEY = os.getenv("GEMINI_API_KEY")
 if not EMERGENT_API_KEY:
     raise ValueError("GEMINI_API_KEY is not set in environment variables")
 
-# Emergent API endpoint for LLM integration
-EMERGENT_API_URL = "https://api.emergent.agent/v1/chat/completions"
+# Emergent API endpoint for LLM integration  
+EMERGENT_API_URL = "https://llm.api.emergent.agent/v1/chat/completions"
 GEMINI_MODEL = "gemini-2.0-flash-exp"
 
 
