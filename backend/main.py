@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from supabase import create_client, Client
 import jwt
 from dotenv import load_dotenv
-from google import genai
+import httpx
 import json
 
 load_dotenv()
