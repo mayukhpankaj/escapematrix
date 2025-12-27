@@ -119,7 +119,7 @@ export default function TaskCard({ task, onUpdate }) {
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-2 border-t">
-            {task.status === 'TO-DO' || task.status === 'PENDING' ? (
+            {(task.status === 'TO-DO' || task.status === 'PENDING') && (
               <Button
                 onClick={() => updateTaskStatus('IN-PROGRESS')}
                 disabled={loading}
@@ -129,7 +129,7 @@ export default function TaskCard({ task, onUpdate }) {
                 <Clock className="w-4 h-4 mr-1" />
                 Start
               </Button>
-            ) : null}
+            )}
             {task.status === 'IN-PROGRESS' && (
               <Button
                 onClick={() => updateTaskStatus('COMPLETED')}
@@ -143,7 +143,7 @@ export default function TaskCard({ task, onUpdate }) {
             )}
             {task.status === 'COMPLETED' && (
               <Button
-                onClick={() => updateTaskStatus('PENDING')}
+                onClick={() => updateTaskStatus('IN-PROGRESS')}
                 disabled={loading}
                 size="sm"
                 variant="outline"
