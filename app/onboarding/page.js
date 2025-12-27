@@ -59,11 +59,11 @@ export default function OnboardingPage() {
         {/* Logo at top */}
         <div className="flex justify-center mb-8">
           <Image 
-            src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/v884ubv2_fontbolt%20%282%29.png"
+            src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
             alt="Escape Matrix"
-            width={300}
-            height={80}
-            className="w-auto h-16 brightness-0 invert"
+            width={400}
+            height={96}
+            className="w-auto h-16 md:h-20 brightness-0 invert object-contain"
           />
         </div>
 

@@ -88,11 +88,11 @@ export default function DashboardPage() {
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
         <Image 
-          src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/v884ubv2_fontbolt%20%282%29.png"
+          src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
           alt="Escape Matrix"
-          width={150}
-          height={40}
-          className="w-auto h-8"
+          width={180}
+          height={43}
+          className="w-auto h-9 object-contain"
         />
         <UserButton afterSignOutUrl="/" />
       </div>
@@ -109,11 +109,11 @@ export default function DashboardPage() {
           <div className="p-6">
             <div className="hidden lg:flex items-center justify-between mb-8">
               <Image 
-                src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/v884ubv2_fontbolt%20%282%29.png"
+                src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
                 alt="Escape Matrix"
-                width={180}
-                height={50}
-                className="w-auto h-10"
+                width={200}
+                height={48}
+                className="w-auto h-10 object-contain"
               />
               <UserButton afterSignOutUrl="/" />
             </div>

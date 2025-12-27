@@ -43,11 +43,11 @@ export default function LoginPage() {
       <div className="mb-8 text-center">
         <div className="flex justify-center mb-4">
           <Image 
-            src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/v884ubv2_fontbolt%20%282%29.png"
+            src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
             alt="Escape Matrix"
-            width={400}
-            height={100}
-            className="w-auto h-20 md:h-24"
+            width={500}
+            height={120}
+            className="w-auto h-24 md:h-28 object-contain"
             priority
           />
         </div>
