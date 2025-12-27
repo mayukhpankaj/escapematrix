@@ -44,7 +44,7 @@ export default function LoginPage() {
         <p className="text-xl text-gray-700">Break free from bad habits. Build your future.</p>
       </div>
       
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-200">
+      <div className="w-full max-w-md">
         <SignUp 
           appearance={{
             elements: {
