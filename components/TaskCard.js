@@ -10,10 +10,10 @@ import { Clock, CheckCircle, Trash2, AlertCircle } from 'lucide-react'
 const API_BASE = '/backend-api/api'
 
 const priorityColors = {
-  'URGENT-IMPORTANT': 'bg-gray-900 text-white',
-  'URGENT-NOTIMPORTANT': 'bg-gray-700 text-white',
-  'NOTURGENT-IMPORTANT': 'bg-gray-500 text-white',
-  'NOTURGENT-NOTIMPORTANT': 'bg-gray-300 text-gray-800',
+  'URGENT-IMPORTANT': 'bg-red-100 text-red-800',
+  'URGENT-NOTIMPORTANT': 'bg-orange-100 text-orange-800',
+  'NOTURGENT-IMPORTANT': 'bg-blue-100 text-blue-800',
+  'NOTURGENT-NOTIMPORTANT': 'bg-gray-100 text-gray-800',
 }
 
 const priorityLabels = {
@@ -93,17 +93,17 @@ export default function TaskCard({ task, onUpdate }) {
 
           {/* Task Type & Repetition */}
           <div className="flex flex-wrap gap-2 text-xs">
-            <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
               {task.task_type === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
             </Badge>
             {task.repetition_days && task.repetition_days.length > 0 && (
-              <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                 <Clock className="w-3 h-3 mr-1" />
                 {task.repetition_days.join(', ')}
               </Badge>
             )}
             {task.repetition_time && (
-              <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                 {task.repetition_time}
               </Badge>
             )}

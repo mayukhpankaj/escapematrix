@@ -159,9 +159,9 @@ export default function DashboardPage() {
                 {/* TO-DO Column */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <ListTodo className="w-5 h-5 text-black" />
+                    <ListTodo className="w-5 h-5 text-blue-600" />
                     <h3 className="text-lg font-semibold text-black">To-Do</h3>
-                    <span className="bg-gray-200 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                    <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                       {tasks['TO-DO']?.length || 0}
                     </span>
                   </div>
@@ -181,9 +181,9 @@ export default function DashboardPage() {
                 {/* IN-PROGRESS Column */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-5 h-5 text-black" />
+                    <Clock className="w-5 h-5 text-orange-600" />
                     <h3 className="text-lg font-semibold text-black">In-Progress</h3>
-                    <span className="bg-gray-200 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                    <span className="bg-orange-100 text-orange-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                       {tasks['IN-PROGRESS']?.length || 0}
                     </span>
                   </div>
@@ -203,9 +203,9 @@ export default function DashboardPage() {
                 {/* COMPLETED Column */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <CheckCircle2 className="w-5 h-5 text-black" />
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
                     <h3 className="text-lg font-semibold text-black">Completed</h3>
-                    <span className="bg-gray-200 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                    <span className="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
                       {tasks['COMPLETED']?.length || 0}
                     </span>
                   </div>

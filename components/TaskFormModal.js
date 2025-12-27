@@ -155,19 +155,19 @@ export default function TaskFormModal({ onClose, onTaskCreated }) {
                 <div className="flex items-center space-x-2 border border-gray-300 rounded-lg p-3">
                   <RadioGroupItem value="URGENT-IMPORTANT" id="urgent-important" />
                   <Label htmlFor="urgent-important" className="font-normal cursor-pointer text-gray-700">
-                    ⚫ Urgent & Important
+                    🔴 Urgent & Important
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 border border-gray-300 rounded-lg p-3">
                   <RadioGroupItem value="URGENT-NOTIMPORTANT" id="urgent-notimportant" />
                   <Label htmlFor="urgent-notimportant" className="font-normal cursor-pointer text-gray-700">
-                    ⚫ Urgent Only
+                    🟠 Urgent Only
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 border border-gray-300 rounded-lg p-3">
                   <RadioGroupItem value="NOTURGENT-IMPORTANT" id="noturgent-important" />
                   <Label htmlFor="noturgent-important" className="font-normal cursor-pointer text-gray-700">
-                    ⚫ Important Only
+                    🔵 Important Only
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 border border-gray-300 rounded-lg p-3">
