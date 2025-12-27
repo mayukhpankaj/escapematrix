@@ -347,7 +347,7 @@ async def process_query(
     user_id: str = Depends(verify_clerk_token)
 ):
     """
-    Process AI query from user using Gemini API
+    Process AI query from user using Gemini API via Emergent Universal Key
     
     Args:
         query_data: Dictionary containing 'query' field
@@ -379,91 +379,89 @@ Message types:
 - CREATETASKS: return finalized task objects
 
 Rules:
-- LONG_TERM task: no repetition_days, no repetition_time
-- SHORT_TERM tasks: must have repetition_days and repetition_time
+- LONG_TERM task: empty repetition_days array [], empty repetition_time ""
+- SHORT_TERM tasks: must have repetition_days array (e.g., ["Monday", "Wednesday"]) and repetition_time (e.g., "06:00")
 - Always return an array of tasks only when type=CREATETASKS
 - Always include exactly 1 LONG_TERM and 2–3 SHORT_TERM tasks
 - Status always starts as TO-DO
 - Think carefully before creating tasks
+
+Required JSON format:
+{
+  "type": "MESSAGE" or "PLAN" or "CREATETASKS",
+  "message": "your message here",
+  "tasks": [array of task objects when type is CREATETASKS, empty array otherwise]
+}
+
+Each task object must have:
+{
+  "task_name": "string",
+  "task_description": "string",
+  "task_type": "LONG_TERM" or "SHORT_TERM",
+  "status": "TO-DO",
+  "priority": one of "URGENT-IMPORTANT", "URGENT-NOTIMPORTANT", "NOTURGENT-IMPORTANT", "NOTURGENT-NOTIMPORTANT",
+  "repetition_days": [] for LONG_TERM, ["Monday", "Wednesday"] for SHORT_TERM,
+  "repetition_time": "" for LONG_TERM, "06:00" for SHORT_TERM
+}
 """
         
-        # Define the response schema as a dict for google-genai
-        response_schema = {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "enum": ["MESSAGE", "PLAN", "CREATETASKS"]
-                },
-                "message": {"type": "string"},
-                "tasks": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "task_name": {"type": "string"},
-                            "task_description": {"type": "string"},
-                            "task_type": {
-                                "type": "string",
-                                "enum": ["LONG_TERM", "SHORT_TERM"]
-                            },
-                            "status": {
-                                "type": "string",
-                                "enum": ["TO-DO", "IN-PROGRESS", "DONE"]
-                            },
-                            "priority": {
-                                "type": "string",
-                                "enum": [
-                                    "URGENT-IMPORTANT",
-                                    "URGENT-NOTIMPORTANT",
-                                    "NOTURGENT-IMPORTANT",
-                                    "NOTURGENT-NOTIMPORTANT"
-                                ]
-                            },
-                            "repetition_days": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            },
-                            "repetition_time": {"type": "string"}
-                        },
-                        "required": [
-                            "task_name",
-                            "task_description",
-                            "task_type",
-                            "status",
-                            "priority",
-                            "repetition_days",
-                            "repetition_time"
-                        ]
-                    }
+        # Call Emergent API
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {EMERGENT_API_KEY}"
+        }
+        
+        payload = {
+            "model": GEMINI_MODEL,
+            "messages": [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": query}
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.3
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                EMERGENT_API_URL,
+                headers=headers,
+                json=payload,
+                timeout=60.0
+            )
+            
+            if response.status_code != 200:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if "error" in error_json:
+                        error_detail = str(error_json["error"])
+                except:
+                    pass
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Gemini API Error: {error_detail}"
+                )
+            
+            result = response.json()
+            
+            # Extract the content from the response
+            if "choices" in result and len(result["choices"]) > 0:
+                content = result["choices"][0]["message"]["content"]
+                ai_response = json.loads(content)
+                
+                # Return the structured response
+                return {
+                    "type": ai_response.get("type", "MESSAGE"),
+                    "message": ai_response.get("message", ""),
+                    "tasks": ai_response.get("tasks", [])
                 }
-            },
-            "required": ["type", "message", "tasks"]
-        }
-        
-        # Call Gemini API
-        response = gemini_client.models.generate_content(
-            model="gemini-2.0-flash-exp",
-            contents=query,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": response_schema,
-                "system_instruction": system_instruction,
-            },
-        )
-        
-        # Parse the response
-        ai_response = json.loads(response.text)
-        
-        # Return the structured response
-        return {
-            "type": ai_response["type"],
-            "message": ai_response["message"],
-            "tasks": ai_response.get("tasks", [])
-        }
+            else:
+                raise HTTPException(status_code=500, detail="Invalid response from Gemini API")
     
     except HTTPException:
         raise
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse AI response: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
 
