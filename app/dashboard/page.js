@@ -8,6 +8,8 @@ import { Plus, Menu, X, CheckCircle2, Clock, ListTodo, Target } from 'lucide-rea
 import TaskCard from '@/components/TaskCard'
 import TaskFormModal from '@/components/TaskFormModal'
 
+const API_BASE = '/backend-api/api'
+
 export default function DashboardPage() {
   const [tasks, setTasks] = useState({ 'TO-DO': [], 'PENDING': [], 'COMPLETED': [] })
   const [loading, setLoading] = useState(true)
@@ -27,7 +29,7 @@ export default function DashboardPage() {
   const fetchTasks = async () => {
     try {
       const token = await getToken()
-      const response = await fetch('http://localhost:8000/api/tasks', {
+      const response = await fetch(`${API_BASE}/tasks`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

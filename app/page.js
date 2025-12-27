@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { SignIn } from '@clerk/nextjs'
+import { SignUp } from '@clerk/nextjs'
 
 export default function LoginPage() {
   const { isSignedIn, isLoaded } = useAuth()
@@ -45,7 +45,7 @@ export default function LoginPage() {
       </div>
       
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <SignIn 
+        <SignUp 
           appearance={{
             elements: {
               rootBox: "mx-auto",
@@ -58,7 +58,7 @@ export default function LoginPage() {
       </div>
       
       <div className="mt-8 text-center text-purple-200">
-        <p className="text-sm">Sign in with Google to get started</p>
+        <p className="text-sm">Sign up with Google to get started</p>
       </div>
     </div>
   )

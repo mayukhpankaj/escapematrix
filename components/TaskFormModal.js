@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { X } from 'lucide-react'
 
+const API_BASE = '/backend-api/api'
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 export default function TaskFormModal({ onClose, onTaskCreated }) {
@@ -39,7 +40,7 @@ export default function TaskFormModal({ onClose, onTaskCreated }) {
 
     try {
       const token = await getToken()
-      const response = await fetch('http://localhost:8000/api/tasks', {
+      const response = await fetch(`${API_BASE}/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -8,6 +8,8 @@ import { Menu, X, ListTodo, Target, Plus } from 'lucide-react'
 import TaskCard from '@/components/TaskCard'
 import TaskFormModal from '@/components/TaskFormModal'
 
+const API_BASE = '/backend-api/api'
+
 export default function LongTermPage() {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,7 +29,7 @@ export default function LongTermPage() {
   const fetchLongTermTasks = async () => {
     try {
       const token = await getToken()
-      const response = await fetch('http://localhost:8000/api/tasks/long-term', {
+      const response = await fetch(`${API_BASE}/tasks/long-term`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

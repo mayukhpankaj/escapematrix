@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Clock, CheckCircle, Trash2, AlertCircle } from 'lucide-react'
 
+const API_BASE = '/backend-api/api'
+
 const priorityColors = {
   'URGENT-IMPORTANT': 'bg-red-100 text-red-800',
   'URGENT-NOTIMPORTANT': 'bg-orange-100 text-orange-800',
@@ -29,7 +31,7 @@ export default function TaskCard({ task, onUpdate }) {
     setLoading(true)
     try {
       const token = await getToken()
-      const response = await fetch(`http://localhost:8000/api/tasks/${task.id}`, {
+      const response = await fetch(`${API_BASE}/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +56,7 @@ export default function TaskCard({ task, onUpdate }) {
     setLoading(true)
     try {
       const token = await getToken()
-      const response = await fetch(`http://localhost:8000/api/tasks/${task.id}`, {
+      const response = await fetch(`${API_BASE}/tasks/${task.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
