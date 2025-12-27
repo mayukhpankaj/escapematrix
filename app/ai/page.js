@@ -52,24 +52,32 @@ export default function AIPage() {
     setQuery('')
 
     // Add user message to chat
-    setMessages(prev => [...prev, { type: 'human', text: userMessage }])
+    const newMessages = [...messages, { type: 'human', text: userMessage }]
+    setMessages(newMessages)
     setLoading(true)
 
     try {
       const token = await getToken()
+      
+      // Convert messages to API format: {role: 'user'|'ai', content: string}
+      const apiMessages = newMessages.map(msg => ({
+        role: msg.type === 'human' ? 'user' : 'ai',
+        content: msg.text
+      }))
+      
       const response = await fetch(`${API_BASE}/processquery`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ query: userMessage }),
+        body: JSON.stringify({ messages: apiMessages }),
       })
 
       if (response.ok) {
         const data = await response.json()
         // Add AI response to chat
-        setMessages(prev => [...prev, { type: 'ai', text: data.response || data.message }])
+        setMessages(prev => [...prev, { type: 'ai', text: data.message }])
       } else {
         setMessages(prev => [...prev, { 
           type: 'ai', 
