@@ -347,14 +347,14 @@ async def process_query(
     user_id: str = Depends(verify_clerk_token)
 ):
     """
-    Process AI query from user
+    Process AI query from user using Gemini API
     
     Args:
         query_data: Dictionary containing 'query' field
         user_id: Authenticated user ID
     
     Returns:
-        AI response
+        AI response with type, message, and optional tasks
     """
     try:
         query = query_data.get("query", "")
@@ -362,14 +362,50 @@ async def process_query(
         if not query:
             raise HTTPException(status_code=400, detail="Query is required")
         
-        # TODO: Implement AI processing logic here
-        # For now, return a simple response
-        response_text = f"Thank you for your question: '{query}'. This is a placeholder response. AI processing will be implemented soon!"
+        # Define the system instruction for the AI agent
+        system_instruction = """YOU ARE A TASK MANAGER AGENT FOR A TODO APP.
+
+RESPOND ONLY IN VALID JSON.
+DO NOT OUTPUT MARKDOWN OR TEXT.
+
+Your job:
+1. Help the user plan ONE long-term goal
+2. Help the user plan 2–3 short-term sub-goals
+3. When the user confirms they are ready, create tasks
+
+Message types:
+- MESSAGE: normal conversation
+- PLAN: planning suggestions and clarification
+- CREATETASKS: return finalized task objects
+
+Rules:
+- LONG_TERM task: no repetition_days, no repetition_time
+- SHORT_TERM tasks: must have repetition_days and repetition_time
+- Always return an array of tasks only when type=CREATETASKS
+- Always include exactly 1 LONG_TERM and 2–3 SHORT_TERM tasks
+- Status always starts as TO-DO
+- Think carefully before creating tasks
+"""
         
+        # Call Gemini API
+        response = gemini_client.models.generate_content(
+            model="gemini-2.0-flash-exp",
+            contents=query,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": AIResponse,
+                "system_instruction": system_instruction,
+            },
+        )
+        
+        # Parse the response
+        ai_response = response.parsed
+        
+        # Return the structured response
         return {
-            "response": response_text,
-            "query": query,
-            "user_id": user_id
+            "type": ai_response["type"],
+            "message": ai_response["message"],
+            "tasks": ai_response.get("tasks", [])
         }
     
     except HTTPException:
