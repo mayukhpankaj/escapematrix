@@ -111,7 +111,18 @@ export default function TaskCard({ task, onUpdate }) {
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-2 border-t">
-            {task.status !== 'COMPLETED' && (
+            {task.status === 'TO-DO' || task.status === 'PENDING' ? (
+              <Button
+                onClick={() => updateTaskStatus('IN-PROGRESS')}
+                disabled={loading}
+                size="sm"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Clock className="w-4 h-4 mr-1" />
+                Start
+              </Button>
+            ) : null}
+            {task.status === 'IN-PROGRESS' && (
               <Button
                 onClick={() => updateTaskStatus('COMPLETED')}
                 disabled={loading}
