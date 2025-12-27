@@ -148,6 +148,13 @@ export default function DashboardPage() {
                   <Sparkles className="w-5 h-5" />
                   AI
                 </button>
+                <button
+                  onClick={() => router.push('/call-me')}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+                >
+                  <Phone className="w-5 h-5" />
+                  Call Me
+                </button>
               </nav>
             </div>
           </div>
