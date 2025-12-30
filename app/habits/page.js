@@ -52,6 +52,8 @@ export default function HabitsPage() {
   const [showAddHabit, setShowAddHabit] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const currentDayRef = useRef(null)
+  const scrollContainerRef = useRef(null)
   
   const router = useRouter()
   const { isSignedIn, isLoaded, getToken } = useAuth()
