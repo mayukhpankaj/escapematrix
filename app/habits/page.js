@@ -434,7 +434,7 @@ export default function HabitsPage() {
               <CalendarDays className="w-16 h-16 mx-auto text-gray-300 mb-4" />
               <h3 className="text-xl font-semibold text-gray-700 mb-2">No habits yet</h3>
               <p className="text-gray-500 mb-4">Start tracking your daily habits by adding your first one!</p>
-              <Button onClick={() => setShowAddHabit(true)} className="bg-purple-600 hover:bg-purple-700">
+              <Button onClick={() => setShowAddHabit(true)} className="bg-black hover:bg-gray-800 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Habit
               </Button>
