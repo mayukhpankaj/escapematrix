@@ -133,6 +133,11 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
   }
 
   const handleKeyDown = (e, blockId) => {
+    // Allow Ctrl+A to select all
+    if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+      return // Let default behavior work
+    }
+    
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       
@@ -176,9 +181,29 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
           }
         }
       }, 0)
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      // Move to previous block
+      const allBlocks = document.querySelectorAll('[data-block-id]')
+      const currentEl = document.querySelector(`[data-block-id="${blockId}"]`)
+      if (currentEl) {
+        const currentIdx = Array.from(allBlocks).indexOf(currentEl)
+        if (currentIdx > 0 && allBlocks[currentIdx - 1]) {
+          allBlocks[currentIdx - 1].focus()
+        }
+      }
     } else if (e.key === 'Backspace' && e.target.textContent === '') {
       e.preventDefault()
       if (blocks.length > 1) {
+        // Focus previous block before deleting
+        const allBlocks = document.querySelectorAll('[data-block-id]')
+        const currentEl = document.querySelector(`[data-block-id="${blockId}"]`)
+        if (currentEl) {
+          const currentIdx = Array.from(allBlocks).indexOf(currentEl)
+          if (currentIdx > 0 && allBlocks[currentIdx - 1]) {
+            allBlocks[currentIdx - 1].focus()
+          }
+        }
         deleteBlock(blockId)
       }
     }
