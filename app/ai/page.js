@@ -79,16 +79,35 @@ export default function AIPage() {
         // Add AI response to chat
         setMessages(prev => [...prev, { type: 'ai', text: data.message }])
       } else {
+        // Handle different error types
+        const errorData = await response.json().catch(() => ({}))
+        let errorMessage = 'Sorry, I encountered an error. Please try again.'
+        
+        if (response.status === 504) {
+          errorMessage = '⏱️ The AI is taking too long to respond. Please try a shorter message or simpler request.'
+        } else if (response.status === 503) {
+          errorMessage = '🔧 AI service is temporarily unavailable. Please try again in a moment.'
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail
+        }
+        
         setMessages(prev => [...prev, { 
           type: 'ai', 
-          text: 'Sorry, I encountered an error. Please try again.' 
+          text: errorMessage
         }])
       }
     } catch (error) {
       console.error('Error processing query:', error)
+      let errorMessage = 'Sorry, I encountered an error. Please try again.'
+      
+      // Handle network timeout
+      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+        errorMessage = '⏱️ Request timed out. Please check your connection and try again.'
+      }
+      
       setMessages(prev => [...prev, { 
         type: 'ai', 
-        text: 'Sorry, I encountered an error. Please try again.' 
+        text: errorMessage
       }])
     } finally {
       setLoading(false)
