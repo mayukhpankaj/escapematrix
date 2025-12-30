@@ -95,6 +95,11 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
     ))
   }
 
+  const handleBlur = (e, blockId) => {
+    // Update content when user stops editing
+    updateBlock(blockId, e.currentTarget.textContent)
+  }
+
   const deleteBlock = (id) => {
     if (blocks.length > 1) {
       setBlocks(blocks.filter(block => block.id !== id))
