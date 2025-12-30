@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock, AlertCircle, MoreVertical, Trash2 } from 'lucide-react'
+import { Clock, AlertCircle, MoreVertical, Trash2, Calendar } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +28,28 @@ const priorityLabels = {
   'NOTURGENT-NOTIMPORTANT': 'Low Priority',
 }
 
+const getTimeRemaining = (deadlineTime) => {
+  const now = new Date()
+  const deadline = new Date(deadlineTime)
+  const diff = deadline - now
+  
+  if (diff <= 0) {
+    return { text: 'Overdue', isOverdue: true }
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  
+  if (days > 0) {
+    return { text: `${days}d ${hours}h ${minutes}m`, isOverdue: false }
+  } else if (hours > 0) {
+    return { text: `${hours}h ${minutes}m`, isOverdue: false }
+  } else {
+    return { text: `${minutes}m`, isOverdue: false }
+  }
+}
+
 export default function TaskCard({ task, onUpdate, onCardClick }) {
   const [loading, setLoading] = useState(false)
   const { getToken } = useAuth()
@@ -40,7 +62,13 @@ export default function TaskCard({ task, onUpdate, onCardClick }) {
     setLoading(true)
     try {
       const token = await getToken()
-      const response = await fetch(`${API_BASE}/tasks/${task.id}`, {
+      
+      // Check if it's a deadline or regular task
+      const endpoint = task.isDeadline 
+        ? `${API_BASE}/deadlines/${task.id}`
+        : `${API_BASE}/tasks/${task.id}`
+      
+      const response = await fetch(endpoint, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -63,6 +91,8 @@ export default function TaskCard({ task, onUpdate, onCardClick }) {
     }
   }
 
+  const timeRemaining = task.isDeadline ? getTimeRemaining(task.deadline_time) : null
+
   return (
     <Card 
       className="hover:shadow-lg transition-shadow border border-gray-200 cursor-pointer"
@@ -76,7 +106,7 @@ export default function TaskCard({ task, onUpdate, onCardClick }) {
               <h4 className="font-semibold text-black line-clamp-2">{task.task_name}</h4>
             </div>
             <div className="flex items-center gap-2">
-              {/* Priority Badge */}
+              {/* Priority Badge - Only for SHORT_TERM */}
               {task.task_type === 'SHORT_TERM' && (
                 <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
                   {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
@@ -110,21 +140,35 @@ export default function TaskCard({ task, onUpdate, onCardClick }) {
             <p className="text-sm text-gray-600 line-clamp-2">{task.task_description}</p>
           )}
 
-          {/* Task Type & Repetition */}
+          {/* Task Type & Details */}
           <div className="flex flex-wrap gap-2 text-xs">
-            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-              {task.task_type === 'LONG_TERM' ? 'Long Term' : 'Short Term'}
-            </Badge>
-            {/* Only show repetition for SHORT_TERM tasks */}
+            {/* Only show repetition for SHORT_TERM tasks - NO "Short Term" badge */}
             {task.task_type === 'SHORT_TERM' && task.repetition_days && task.repetition_days.length > 0 && (
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                 <Clock className="w-3 h-3 mr-1" />
-                {task.repetition_days.join(', ')}
+                {task.repetition_days.slice(0, 3).map(d => d.substring(0, 3)).join(', ')}
+                {task.repetition_days.length > 3 && '...'}
               </Badge>
             )}
             {task.task_type === 'SHORT_TERM' && task.repetition_time && (
               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Clock className="w-3 h-3 mr-1" />
                 {task.repetition_time}
+              </Badge>
+            )}
+            
+            {/* Time Remaining for Deadlines */}
+            {task.isDeadline && timeRemaining && (
+              <Badge 
+                variant="outline" 
+                className={timeRemaining.isOverdue 
+                  ? "bg-red-50 text-red-700 border-red-200" 
+                  : "bg-orange-50 text-orange-700 border-orange-200"
+                }
+              >
+                <Calendar className="w-3 h-3 mr-1" />
+                {timeRemaining.isOverdue ? '⚠️ ' : ''}
+                {timeRemaining.text}
               </Badge>
             )}
           </div>
