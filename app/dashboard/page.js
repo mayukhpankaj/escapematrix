@@ -119,6 +119,27 @@ export default function DashboardPage() {
       return
     }
 
+    // Store old status for rollback if needed
+    const oldStatus = draggedTask.status
+    
+    // OPTIMISTIC UPDATE - Update UI immediately
+    setTasks(prevTasks => {
+      const newTasks = { ...prevTasks }
+      
+      // Remove from old column
+      newTasks[oldStatus] = newTasks[oldStatus].filter(t => t.id !== draggedTask.id)
+      
+      // Add to new column with updated status
+      const updatedTask = { ...draggedTask, status: newStatus }
+      newTasks[newStatus] = [...newTasks[newStatus], updatedTask]
+      
+      return newTasks
+    })
+    
+    // Reset dragged task
+    setDraggedTask(null)
+
+    // Make API call in background
     try {
       const token = await getToken()
       const response = await fetch(`${API_BASE}/tasks/${draggedTask.id}`, {
@@ -130,17 +151,15 @@ export default function DashboardPage() {
         body: JSON.stringify({ status: newStatus }),
       })
 
-      if (response.ok) {
-        // Refresh tasks after successful update
-        await fetchTasks()
-      } else {
-        const errorData = await response.json()
-        console.error('Failed to update task status:', errorData)
+      if (!response.ok) {
+        // If API call fails, rollback the optimistic update
+        console.error('Failed to update task status, rolling back...')
+        await fetchTasks() // Refresh to get correct state
       }
     } catch (error) {
       console.error('Error updating task:', error)
-    } finally {
-      setDraggedTask(null)
+      // Rollback on error
+      await fetchTasks()
     }
   }
 
