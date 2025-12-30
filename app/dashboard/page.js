@@ -284,8 +284,8 @@ export default function DashboardPage() {
                   onDragOver={(e) => handleDragOver(e, 'TO-DO')}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'TO-DO')}
-                  className={`min-h-[200px] rounded-lg transition-all ${
-                    dragOverColumn === 'TO-DO' ? 'bg-blue-50 ring-2 ring-blue-300' : ''
+                  className={`min-h-[500px] rounded-lg p-4 transition-all ${
+                    dragOverColumn === 'TO-DO' ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' : ''
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-4">
@@ -323,8 +323,8 @@ export default function DashboardPage() {
                   onDragOver={(e) => handleDragOver(e, 'IN-PROGRESS')}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'IN-PROGRESS')}
-                  className={`min-h-[200px] rounded-lg transition-all ${
-                    dragOverColumn === 'IN-PROGRESS' ? 'bg-orange-50 ring-2 ring-orange-300' : ''
+                  className={`min-h-[500px] rounded-lg p-4 transition-all ${
+                    dragOverColumn === 'IN-PROGRESS' ? 'bg-orange-50 ring-2 ring-orange-400 ring-inset' : ''
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-4">
@@ -362,8 +362,8 @@ export default function DashboardPage() {
                   onDragOver={(e) => handleDragOver(e, 'COMPLETED')}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'COMPLETED')}
-                  className={`min-h-[200px] rounded-lg transition-all ${
-                    dragOverColumn === 'COMPLETED' ? 'bg-green-50 ring-2 ring-green-300' : ''
+                  className={`min-h-[500px] rounded-lg p-4 transition-all ${
+                    dragOverColumn === 'COMPLETED' ? 'bg-green-50 ring-2 ring-green-400 ring-inset' : ''
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-4">
