@@ -171,11 +171,11 @@ def test_ai_chat_no_auth_header():
     }
     
     payload = {
-        "query": "Test query"
+        "messages": [{"role": "user", "content": "Test query"}]
     }
     
     try:
-        response = requests.post(f"{API_BASE_URL}/api/processquery", 
+        response = requests.post(f"{API_BASE_URL}/processquery", 
                                json=payload, 
                                headers=headers,
                                timeout=10)
