@@ -423,8 +423,8 @@ export default function HabitsPage() {
                 onClick={() => router.push('/habits')}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
               >
-                <CalendarDays className="w-5 h-5" />
-                Daily Habit Tracker
+                <Zap className="w-5 h-5" />
+                Streaks
               </button>
               <button
                 onClick={() => router.push('/ai')}
