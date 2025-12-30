@@ -236,7 +236,8 @@ async def get_tasks(
     """
     try:
         # Fetch short-term tasks (for dashboard - these are the daily tasks)
-        short_term_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+        # Order by display_order for proper positioning
+        short_term_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).order("display_order").order("created_at", desc=True).execute()
         
         short_term_tasks = short_term_response.data if short_term_response.data else []
         
