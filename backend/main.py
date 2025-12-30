@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import json
 import httpx
+import asyncio
+import logging
 
 load_dotenv()
 
