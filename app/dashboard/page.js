@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showTaskModal, setShowTaskModal] = useState(false)
+  const [draggedTask, setDraggedTask] = useState(null)
   const router = useRouter()
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
