@@ -543,22 +543,72 @@ export default function HabitsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold mb-4">Add New Habit</h3>
-            <Input
-              type="text"
-              placeholder="Habit name (e.g., Do Gym, Read, Meditate)"
-              value={newHabitName}
-              onChange={(e) => setNewHabitName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addHabit()}
-              className="mb-4"
-              autoFocus
-            />
+            
+            {/* Emoji Selector */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Emoji</label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="w-full flex items-center justify-between px-4 py-3 border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="text-2xl">{selectedEmoji}</span>
+                    <span className="text-gray-600">Click to change emoji</span>
+                  </span>
+                  <Smile className="w-5 h-5 text-gray-400" />
+                </button>
+                
+                {showEmojiPicker && (
+                  <div className="absolute top-full left-0 mt-2 z-50 shadow-2xl rounded-lg overflow-hidden">
+                    <EmojiPicker
+                      onEmojiClick={(emojiData) => {
+                        setSelectedEmoji(emojiData.emoji)
+                        setShowEmojiPicker(false)
+                      }}
+                      width={350}
+                      height={400}
+                      searchDisabled={false}
+                      skinTonesDisabled={true}
+                      previewConfig={{ showPreview: false }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Habit Name Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Habit Name</label>
+              <Input
+                type="text"
+                placeholder="e.g., Do Gym, Read, Meditate"
+                value={newHabitName}
+                onChange={(e) => setNewHabitName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addHabit()}
+                autoFocus
+              />
+            </div>
+
+            {/* Preview */}
+            {newHabitName && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600 mb-1">Preview:</p>
+                <p className="text-lg font-medium">{selectedEmoji} {newHabitName}</p>
+              </div>
+            )}
+
+            {/* Buttons */}
             <div className="flex space-x-3">
-              <Button onClick={addHabit} className="flex-1 bg-purple-600 hover:bg-purple-700">
+              <Button onClick={addHabit} className="flex-1 bg-black hover:bg-gray-800 text-white">
                 Add Habit
               </Button>
               <Button onClick={() => {
                 setShowAddHabit(false)
                 setNewHabitName('')
+                setSelectedEmoji('✨')
+                setShowEmojiPicker(false)
               }} variant="outline" className="flex-1">
                 Cancel
               </Button>
