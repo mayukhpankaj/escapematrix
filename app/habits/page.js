@@ -413,11 +413,11 @@ export default function HabitsPage() {
                 Dashboard
               </button>
               <button
-                onClick={() => router.push('/long-term')}
+                onClick={() => router.push('/deadlines')}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
               >
                 <Target className="w-5 h-5" />
-                Long Term Goals
+                Deadlines
               </button>
               <button
                 onClick={() => router.push('/habits')}
