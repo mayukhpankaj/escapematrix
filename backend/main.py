@@ -321,7 +321,7 @@ async def update_task(
     user_id: str = Depends(verify_clerk_token)
 ):
     """
-    Update a task
+    Update a task (works for both long-term and short-term tasks)
     
     Args:
         task_id: Task UUID
@@ -332,25 +332,46 @@ async def update_task(
         Updated task data
     """
     try:
-        # Verify task belongs to user
-        existing_task = supabase.table("tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
+        # Try to find task in short_term_tasks first
+        existing_task = supabase.table("short_term_tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
         
-        if not existing_task.data:
-            raise HTTPException(status_code=404, detail="Task not found or unauthorized")
+        if existing_task.data:
+            # It's a short-term task
+            update_data = {k: v for k, v in task_update.dict().items() if v is not None}
+            
+            if not update_data:
+                raise HTTPException(status_code=400, detail="No fields to update")
+            
+            response = supabase.table("short_term_tasks").update(update_data).eq("id", task_id).execute()
+            
+            if response.data:
+                result = response.data[0]
+                result["task_type"] = "SHORT_TERM"
+                return result
+            else:
+                raise HTTPException(status_code=500, detail="Failed to update task")
         
-        # Prepare update data (only include non-None fields)
-        update_data = {k: v for k, v in task_update.dict().items() if v is not None}
+        # Try long_term_tasks
+        existing_task = supabase.table("long_term_tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
         
-        if not update_data:
-            raise HTTPException(status_code=400, detail="No fields to update")
+        if existing_task.data:
+            # It's a long-term task
+            update_data = {k: v for k, v in task_update.dict().items() if v is not None}
+            
+            if not update_data:
+                raise HTTPException(status_code=400, detail="No fields to update")
+            
+            response = supabase.table("long_term_tasks").update(update_data).eq("id", task_id).execute()
+            
+            if response.data:
+                result = response.data[0]
+                result["task_type"] = "LONG_TERM"
+                return result
+            else:
+                raise HTTPException(status_code=500, detail="Failed to update task")
         
-        # Update task
-        response = supabase.table("tasks").update(update_data).eq("id", task_id).execute()
-        
-        if response.data:
-            return response.data[0]
-        else:
-            raise HTTPException(status_code=500, detail="Failed to update task")
+        # Task not found in either table
+        raise HTTPException(status_code=404, detail="Task not found or unauthorized")
     
     except HTTPException:
         raise
@@ -365,7 +386,7 @@ async def patch_task_status(
     user_id: str = Depends(verify_clerk_token)
 ):
     """
-    Patch task status (for drag and drop)
+    Patch task status (for drag and drop - works for both task types)
     
     Args:
         task_id: Task UUID
@@ -376,8 +397,45 @@ async def patch_task_status(
         Updated task data
     """
     try:
-        # Verify task belongs to user
-        existing_task = supabase.table("tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
+        new_status = status_update.get("status")
+        if not new_status:
+            raise HTTPException(status_code=400, detail="Status field is required")
+        
+        # Try to find task in short_term_tasks first
+        existing_task = supabase.table("short_term_tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
+        
+        if existing_task.data:
+            # It's a short-term task
+            response = supabase.table("short_term_tasks").update({"status": new_status}).eq("id", task_id).execute()
+            
+            if response.data:
+                result = response.data[0]
+                result["task_type"] = "SHORT_TERM"
+                return result
+            else:
+                raise HTTPException(status_code=500, detail="Failed to update task")
+        
+        # Try long_term_tasks
+        existing_task = supabase.table("long_term_tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
+        
+        if existing_task.data:
+            # It's a long-term task
+            response = supabase.table("long_term_tasks").update({"status": new_status}).eq("id", task_id).execute()
+            
+            if response.data:
+                result = response.data[0]
+                result["task_type"] = "LONG_TERM"
+                return result
+            else:
+                raise HTTPException(status_code=500, detail="Failed to update task")
+        
+        # Task not found in either table
+        raise HTTPException(status_code=404, detail="Task not found or unauthorized")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating task: {str(e)}")
         
         if not existing_task.data:
             raise HTTPException(status_code=404, detail="Task not found or unauthorized")
