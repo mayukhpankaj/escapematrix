@@ -1060,6 +1060,7 @@ class DeadlineCreate(BaseModel):
     task_description: Optional[str] = None
     deadline_time: str = Field(..., description="ISO format datetime string")
     priority: Optional[str] = "MEDIUM"
+    markdown_content: Optional[str] = None
 
 
 class DeadlineUpdate(BaseModel):
@@ -1069,6 +1070,7 @@ class DeadlineUpdate(BaseModel):
     deadline_time: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[str] = None
+    markdown_content: Optional[str] = None
 
 
 @app.get("/api/deadlines")
