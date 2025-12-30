@@ -571,6 +571,7 @@ async def process_query(
 ):
     """
     Process AI query from user using Gemini API with conversation history
+    Includes timeout handling and robust error management
     
     Args:
         query_data: Dictionary containing 'messages' array
@@ -590,6 +591,8 @@ async def process_query(
         
         if not messages:
             raise HTTPException(status_code=400, detail="Messages array is required")
+        
+        logger.info(f"Processing query for user {user_id} with {len(messages)} messages")
         
         # Define the system instruction for the AI agent
         system_instruction = """YOU ARE A TASK MANAGER AGENT FOR A TODO APP.
@@ -665,12 +668,44 @@ Each task object must have:
         # Start a chat session with history
         chat = model.start_chat(history=gemini_messages[:-1])  # All messages except the last one
         
-        # Send the last message
+        # Send the last message with timeout wrapper
         last_message = gemini_messages[-1]["parts"][0]["text"]
-        response = chat.send_message(last_message)
+        
+        # Wrap the synchronous Gemini call in an async timeout
+        try:
+            logger.info(f"Sending message to Gemini API (length: {len(last_message)} chars)")
+            
+            # Use asyncio to run the synchronous call with timeout (60 seconds)
+            response = await asyncio.wait_for(
+                asyncio.to_thread(chat.send_message, last_message),
+                timeout=60.0
+            )
+            
+            logger.info("Gemini API response received successfully")
+            
+        except asyncio.TimeoutError:
+            logger.error(f"Gemini API timeout after 60 seconds for user {user_id}")
+            raise HTTPException(
+                status_code=504,
+                detail="AI response took too long. Please try again with a shorter message or simpler request."
+            )
+        except Exception as gemini_error:
+            logger.error(f"Gemini API error for user {user_id}: {str(gemini_error)}")
+            raise HTTPException(
+                status_code=503,
+                detail=f"AI service temporarily unavailable: {str(gemini_error)}"
+            )
         
         # Parse the JSON response
-        ai_response = json.loads(response.text)
+        try:
+            ai_response = json.loads(response.text)
+            logger.info(f"Successfully parsed AI response, type: {ai_response.get('type', 'UNKNOWN')}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse Gemini response: {response.text[:200]}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"AI returned invalid response format. Please try again."
+            )
         
         response_type = ai_response.get("type", "MESSAGE")
         
@@ -678,6 +713,7 @@ Each task object must have:
         created_tasks = []
         if response_type == "CREATETASKS":
             tasks = ai_response.get("tasks", [])
+            logger.info(f"Creating {len(tasks)} tasks for user {user_id}")
             
             for task in tasks:
                 try:
@@ -698,10 +734,11 @@ Each task object must have:
                     
                     if task_response.data:
                         created_tasks.append(task_response.data[0])
+                        logger.info(f"Successfully created task: {task.get('task_name')}")
                 
                 except Exception as task_error:
                     # Log error but continue with other tasks
-                    print(f"Error creating task: {str(task_error)}")
+                    logger.error(f"Error creating task '{task.get('task_name')}': {str(task_error)}")
                     continue
         
         # Return the structured response
@@ -714,10 +751,18 @@ Each task object must have:
     
     except HTTPException:
         raise
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to parse AI response: {str(e)}")
+    except asyncio.TimeoutError:
+        logger.error(f"Overall request timeout for user {user_id}")
+        raise HTTPException(
+            status_code=504,
+            detail="Request timeout. Please try again."
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
+        logger.error(f"Unexpected error processing query for user {user_id}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"An unexpected error occurred. Please try again later."
+        )
 
 
 @app.post("/api/make-call")
