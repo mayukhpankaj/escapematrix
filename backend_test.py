@@ -357,10 +357,11 @@ def test_health_check():
     print("\n🔍 Testing health check endpoint...")
     
     try:
-        response = requests.get(f"{NEXT_PUBLIC_BASE_URL}/", timeout=10)
+        response = requests.get("http://localhost:8000/", timeout=10)
         
         if response.status_code == 200:
-            print(f"   Response: Health check successful")
+            data = response.json()
+            print(f"   Response: {json.dumps(data, indent=2)}")
             print("✅ Health check passed!")
             return True
         else:
