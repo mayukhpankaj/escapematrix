@@ -222,6 +222,69 @@ export default function HabitsPage() {
     return new Date(year, month + 1, 0).getDate()
   }
 
+  // Fetch available past months
+  const fetchPastMonths = async () => {
+    setLoadingPastData(true)
+    try {
+      const token = await getToken()
+      
+      // Get all completions to find which months have data
+      const response = await fetch(`${API_BASE}/habits`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) {
+        setLoadingPastData(false)
+        return
+      }
+      
+      const allHabits = await response.json()
+      
+      // Get current date
+      const now = new Date()
+      const currentYear = now.getFullYear()
+      const currentMonthNum = now.getMonth()
+      
+      // Generate list of past months (last 12 months, excluding current)
+      const pastMonthsList = []
+      for (let i = 1; i <= 12; i++) {
+        const date = new Date(currentYear, currentMonthNum - i, 1)
+        const year = date.getFullYear()
+        const month = date.getMonth() + 1
+        
+        // Fetch data for this month
+        const completionsRes = await fetch(
+          `${API_BASE}/habits/completions/${year}/${month}`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        )
+        
+        if (completionsRes.ok) {
+          const completionsData = await completionsRes.json()
+          
+          // Only add if there's data
+          if (completionsData.length > 0) {
+            pastMonthsList.push({
+              date: date,
+              year: year,
+              month: month,
+              monthName: date.toLocaleString('default', { month: 'long', year: 'numeric' }),
+              habits: allHabits,
+              completions: completionsData
+            })
+          }
+        }
+      }
+      
+      setPastMonths(pastMonthsList)
+      setLoadingPastData(false)
+    } catch (error) {
+      console.error('Error fetching past months:', error)
+      setLoadingPastData(false)
+    }
+  }
+
+  // Calculate days in current month
+
   // Calculate completion score for each day
   const getCompletionScores = () => {
     const daysInMonth = getDaysInMonth()
