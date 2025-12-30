@@ -54,6 +54,8 @@ export default function HabitsPage() {
   const [completions, setCompletions] = useState([])
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [newHabitName, setNewHabitName] = useState('')
+  const [selectedEmoji, setSelectedEmoji] = useState('✨')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showAddHabit, setShowAddHabit] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
