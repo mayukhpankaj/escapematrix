@@ -14,49 +14,55 @@ import { Button } from '@/components/ui/button'
 const API_BASE = '/backend-api/api'
 
 export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete }) {
-  const [content, setContent] = useState('')
   const [blocks, setBlocks] = useState([{ id: 1, type: 'paragraph', content: '' }])
   const [saving, setSaving] = useState(false)
   const { getToken } = useAuth()
-  const saveTimeoutRef = useRef(null)
+  const hasChanges = useRef(false)
 
+  // Load content when modal opens
   useEffect(() => {
     if (isOpen && task) {
-      // Load existing content from markdown_content
-      if (task.markdown_content) {
+      // Try to load from localStorage first (for unsaved changes)
+      const localStorageKey = `task-${task.id}-content`
+      const savedContent = localStorage.getItem(localStorageKey)
+      
+      if (savedContent) {
         try {
-          const parsed = JSON.parse(task.markdown_content)
+          const parsed = JSON.parse(savedContent)
           setBlocks(parsed)
         } catch {
-          // If not JSON, treat as plain text
-          setBlocks([{ id: 1, type: 'paragraph', content: task.markdown_content }])
+          loadFromDatabase()
         }
       } else {
-        setBlocks([{ id: 1, type: 'paragraph', content: '' }])
+        loadFromDatabase()
       }
+      
+      hasChanges.current = false
     }
   }, [isOpen, task])
 
-  // Auto-save with debounce
-  useEffect(() => {
-    if (!isOpen || !task) return
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveContent()
-    }, 1000)
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
+  const loadFromDatabase = () => {
+    if (task.markdown_content) {
+      try {
+        const parsed = JSON.parse(task.markdown_content)
+        setBlocks(parsed)
+      } catch {
+        setBlocks([{ id: 1, type: 'paragraph', content: task.markdown_content }])
       }
+    } else {
+      setBlocks([{ id: 1, type: 'paragraph', content: '' }])
     }
-  }, [blocks])
+  }
 
-  const saveContent = async () => {
+  // Save to localStorage whenever blocks change
+  useEffect(() => {
+    if (isOpen && task && hasChanges.current) {
+      const localStorageKey = `task-${task.id}-content`
+      localStorage.setItem(localStorageKey, JSON.stringify(blocks))
+    }
+  }, [blocks, isOpen, task])
+
+  const saveToBackend = async () => {
     if (!task) return
 
     try {
@@ -73,11 +79,23 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
           markdown_content: JSON.stringify(blocks)
         }),
       })
+
+      // Clear localStorage after successful save
+      const localStorageKey = `task-${task.id}-content`
+      localStorage.removeItem(localStorageKey)
+      
+      hasChanges.current = false
     } catch (error) {
       console.error('Error saving content:', error)
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleClose = async () => {
+    // Save to backend before closing
+    await saveToBackend()
+    onClose()
   }
 
   const addBlock = (type = 'paragraph') => {
@@ -87,12 +105,14 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
       content: ''
     }
     setBlocks([...blocks, newBlock])
+    hasChanges.current = true
   }
 
   const updateBlock = (id, content) => {
     setBlocks(blocks.map(block => 
       block.id === id ? { ...block, content } : block
     ))
+    hasChanges.current = true
   }
 
   const handleBlur = (e, blockId) => {
@@ -103,6 +123,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
   const deleteBlock = (id) => {
     if (blocks.length > 1) {
       setBlocks(blocks.filter(block => block.id !== id))
+      hasChanges.current = true
     }
   }
 
@@ -118,6 +139,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
       const newBlocks = [...blocks]
       newBlocks.splice(currentIndex + 1, 0, newBlock)
       setBlocks(newBlocks)
+      hasChanges.current = true
       
       // Focus the new block
       setTimeout(() => {
