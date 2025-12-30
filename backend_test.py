@@ -13,9 +13,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Use the production URL for testing as specified in environment
-NEXT_PUBLIC_BASE_URL = os.getenv("NEXT_PUBLIC_BASE_URL", "https://task-master-444.preview.emergentagent.com")
-API_BASE_URL = f"{NEXT_PUBLIC_BASE_URL}/api"  # Backend API routes are prefixed with /api
+# Use the local FastAPI backend for testing
+API_BASE_URL = "http://localhost:8000/api"  # FastAPI backend runs on port 8000
 
 def create_test_jwt(user_id="test_user_123"):
     """Create a test JWT token for authentication"""
