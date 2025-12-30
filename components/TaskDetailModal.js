@@ -131,25 +131,45 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       
-      // Save current block's content before creating new one
+      // Save current content and create new block in single state update
       const currentContent = e.currentTarget.textContent
-      updateBlock(blockId, currentContent)
       
-      const currentIndex = blocks.findIndex(b => b.id === blockId)
-      const newBlock = {
-        id: Date.now(),
-        type: 'paragraph',
-        content: ''
-      }
-      const newBlocks = [...blocks]
-      newBlocks.splice(currentIndex + 1, 0, newBlock)
-      setBlocks(newBlocks)
+      setBlocks(prevBlocks => {
+        const currentIndex = prevBlocks.findIndex(b => b.id === blockId)
+        
+        // Create new blocks array with updated content and new block
+        const newBlocks = prevBlocks.map(block => 
+          block.id === blockId ? { ...block, content: currentContent } : block
+        )
+        
+        const newBlock = {
+          id: Date.now(),
+          type: 'paragraph',
+          content: ''
+        }
+        
+        newBlocks.splice(currentIndex + 1, 0, newBlock)
+        return newBlocks
+      })
+      
       hasChanges.current = true
       
       // Focus the new block
       setTimeout(() => {
-        const newElement = document.querySelector(`[data-block-id="${newBlock.id}"]`)
-        if (newElement) newElement.focus()
+        const newElement = document.querySelector(`[data-block-id="${Date.now()}"]`)
+        if (newElement) {
+          newElement.focus()
+        } else {
+          // Fallback: focus the next block after current
+          const allBlocks = document.querySelectorAll('[data-block-id]')
+          const currentEl = document.querySelector(`[data-block-id="${blockId}"]`)
+          if (currentEl) {
+            const currentIdx = Array.from(allBlocks).indexOf(currentEl)
+            if (allBlocks[currentIdx + 1]) {
+              allBlocks[currentIdx + 1].focus()
+            }
+          }
+        }
       }, 0)
     } else if (e.key === 'Backspace' && e.target.textContent === '') {
       e.preventDefault()
