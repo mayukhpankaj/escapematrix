@@ -128,9 +128,9 @@ backend:
       - working: "NA"
         agent: "user"
         comment: "User reported intermittent 520 errors on AI chat page indicating backend timeout issues."
-      - working: "NA"
-        agent: "main"
-        comment: "Fixed 520 timeout error by implementing comprehensive timeout handling. Changes: (1) Added asyncio.wait_for() wrapper around Gemini API call with 60-second timeout, (2) Implemented detailed logging for debugging (request start, success, timeout, errors), (3) Added specific error handling for asyncio.TimeoutError with 504 status code, (4) Improved error messages for different failure scenarios (timeout, service unavailable, parsing errors), (5) Updated frontend to display user-friendly error messages based on status codes (504 for timeout, 503 for unavailable). The Gemini call is now wrapped in asyncio.to_thread() to make it async-compatible and timeout-aware. Backend will now return 504 Gateway Timeout instead of 520 when Gemini takes too long, preventing proxy timeouts."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive timeout handling testing completed successfully! All 11 test scenarios passed: (1) Normal operation works correctly with PLAN, MESSAGE, and CREATETASKS responses, (2) Timeout mechanism properly implemented with asyncio.wait_for() wrapper (60-second timeout), (3) Detailed logging working perfectly - shows 'Processing query', 'Sending message to Gemini', 'response received' in logs, (4) Error handling provides user-friendly messages (504 for timeout, 503 for service unavailable), (5) Backward compatibility maintained with old query format, (6) Authentication properly enforced (401 for missing/invalid tokens), (7) Input validation working (400 for missing/empty messages), (8) Complex queries processed successfully within timeout limits. The 520 error fix is working correctly - backend now returns proper status codes instead of 520 proxy timeouts. Verified through logs that asyncio timeout wrapper and detailed logging are functioning as designed."
 
   - task: "Task Creation Endpoint"
     implemented: true
