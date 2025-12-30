@@ -107,11 +107,11 @@ user_problem_statement: "Build a full-stack habit tracking app called 'Escape Ma
 backend:
   - task: "AI Chat Endpoint - Process Query with Gemini"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/main.py"
     stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
