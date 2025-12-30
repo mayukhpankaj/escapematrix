@@ -211,6 +211,15 @@ export default function DashboardPage() {
         return newTasks
       })
       
+      // Trigger confetti when task is moved to COMPLETED
+      if (newStatus === 'COMPLETED') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        })
+      }
+      
       setDraggedTask(null)
 
       // Make API call in background
