@@ -437,7 +437,7 @@ export default function DashboardPage() {
                             draggedTask?.id === task.id ? 'opacity-50' : 'opacity-100'
                           }`}
                         >
-                          <TaskCard task={task} onUpdate={fetchTasks} />
+                          <TaskCard task={task} onUpdate={fetchTasks} onCardClick={handleCardClick} />
                         </div>
                       ))
                     ) : (
@@ -477,7 +477,7 @@ export default function DashboardPage() {
                             draggedTask?.id === task.id ? 'opacity-50' : 'opacity-100'
                           }`}
                         >
-                          <TaskCard task={task} onUpdate={fetchTasks} />
+                          <TaskCard task={task} onUpdate={fetchTasks} onCardClick={handleCardClick} />
                         </div>
                       ))
                     ) : (
@@ -517,7 +517,7 @@ export default function DashboardPage() {
                             draggedTask?.id === task.id ? 'opacity-50' : 'opacity-100'
                           }`}
                         >
-                          <TaskCard task={task} onUpdate={fetchTasks} />
+                          <TaskCard task={task} onUpdate={fetchTasks} onCardClick={handleCardClick} />
                         </div>
                       ))
                     ) : (
