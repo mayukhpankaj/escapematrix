@@ -6,7 +6,7 @@ import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Menu, X, ListTodo, Target, Sparkles, Plus, Trash2, Phone, CalendarDays, Clock, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Menu, X, ListTodo, Target, Sparkles, Plus, Trash2, Phone, CalendarDays, Clock, AlertCircle, CheckCircle2, Zap } from 'lucide-react'
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
 
