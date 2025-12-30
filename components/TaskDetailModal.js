@@ -138,47 +138,37 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
       'data-block-id': block.id,
       contentEditable: true,
       suppressContentEditableWarning: true,
-      onInput: (e) => updateBlock(block.id, e.currentTarget.textContent),
+      onBlur: (e) => handleBlur(e, block.id),
       onKeyDown: (e) => handleKeyDown(e, block.id),
       className: "outline-none focus:outline-none min-h-[1.5rem] px-1 py-0.5",
-      placeholder: "Type something..."
+      dangerouslySetInnerHTML: { __html: block.content }
     }
 
     switch (block.type) {
       case 'heading1':
         return (
-          <h1 {...commonProps} className={`${commonProps.className} text-3xl font-bold mb-2`}>
-            {block.content}
-          </h1>
+          <h1 {...commonProps} className={`${commonProps.className} text-3xl font-bold mb-2`} />
         )
       case 'heading2':
         return (
-          <h2 {...commonProps} className={`${commonProps.className} text-2xl font-semibold mb-2`}>
-            {block.content}
-          </h2>
+          <h2 {...commonProps} className={`${commonProps.className} text-2xl font-semibold mb-2`} />
         )
       case 'heading3':
         return (
-          <h3 {...commonProps} className={`${commonProps.className} text-xl font-medium mb-1`}>
-            {block.content}
-          </h3>
+          <h3 {...commonProps} className={`${commonProps.className} text-xl font-medium mb-1`} />
         )
       case 'bullet':
         return (
           <div className="flex items-start gap-2 mb-1">
             <span className="mt-2">•</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1`}>
-              {block.content}
-            </div>
+            <div {...commonProps} className={`${commonProps.className} flex-1`} />
           </div>
         )
       case 'numbered':
         return (
           <div className="flex items-start gap-2 mb-1">
             <span className="mt-2">{index + 1}.</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1`}>
-              {block.content}
-            </div>
+            <div {...commonProps} className={`${commonProps.className} flex-1`} />
           </div>
         )
       case 'image':
@@ -191,17 +181,15 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
                 type="text"
                 placeholder="Paste image URL..."
                 className="w-full p-2 border border-gray-300 rounded-lg"
-                value={block.content}
-                onChange={(e) => updateBlock(block.id, e.target.value)}
+                defaultValue={block.content}
+                onBlur={(e) => updateBlock(block.id, e.target.value)}
               />
             )}
           </div>
         )
       default:
         return (
-          <p {...commonProps}>
-            {block.content}
-          </p>
+          <p {...commonProps} />
         )
     }
   }
