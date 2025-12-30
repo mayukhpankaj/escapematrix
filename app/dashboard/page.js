@@ -261,9 +261,12 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* TO-DO Column */}
                 <div
-                  onDragOver={handleDragOver}
+                  onDragOver={(e) => handleDragOver(e, 'TO-DO')}
+                  onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'TO-DO')}
-                  className="min-h-[200px]"
+                  className={`min-h-[200px] rounded-lg transition-all ${
+                    dragOverColumn === 'TO-DO' ? 'bg-blue-50 ring-2 ring-blue-300' : ''
+                  }`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <ListTodo className="w-5 h-5 text-blue-600" />
@@ -280,7 +283,9 @@ export default function DashboardPage() {
                           draggable
                           onDragStart={(e) => handleDragStart(e, task)}
                           onDragEnd={handleDragEnd}
-                          className="cursor-move"
+                          className={`cursor-move transition-opacity ${
+                            draggedTask?.id === task.id ? 'opacity-50' : 'opacity-100'
+                          }`}
                         >
                           <TaskCard task={task} onUpdate={fetchTasks} />
                         </div>
@@ -295,9 +300,12 @@ export default function DashboardPage() {
 
                 {/* IN-PROGRESS Column */}
                 <div
-                  onDragOver={handleDragOver}
+                  onDragOver={(e) => handleDragOver(e, 'IN-PROGRESS')}
+                  onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'IN-PROGRESS')}
-                  className="min-h-[200px]"
+                  className={`min-h-[200px] rounded-lg transition-all ${
+                    dragOverColumn === 'IN-PROGRESS' ? 'bg-orange-50 ring-2 ring-orange-300' : ''
+                  }`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <Clock className="w-5 h-5 text-orange-600" />
@@ -314,7 +322,9 @@ export default function DashboardPage() {
                           draggable
                           onDragStart={(e) => handleDragStart(e, task)}
                           onDragEnd={handleDragEnd}
-                          className="cursor-move"
+                          className={`cursor-move transition-opacity ${
+                            draggedTask?.id === task.id ? 'opacity-50' : 'opacity-100'
+                          }`}
                         >
                           <TaskCard task={task} onUpdate={fetchTasks} />
                         </div>
@@ -329,9 +339,12 @@ export default function DashboardPage() {
 
                 {/* COMPLETED Column */}
                 <div
-                  onDragOver={handleDragOver}
+                  onDragOver={(e) => handleDragOver(e, 'COMPLETED')}
+                  onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'COMPLETED')}
-                  className="min-h-[200px]"
+                  className={`min-h-[200px] rounded-lg transition-all ${
+                    dragOverColumn === 'COMPLETED' ? 'bg-green-50 ring-2 ring-green-300' : ''
+                  }`}
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -348,7 +361,9 @@ export default function DashboardPage() {
                           draggable
                           onDragStart={(e) => handleDragStart(e, task)}
                           onDragEnd={handleDragEnd}
-                          className="cursor-move"
+                          className={`cursor-move transition-opacity ${
+                            draggedTask?.id === task.id ? 'opacity-50' : 'opacity-100'
+                          }`}
                         >
                           <TaskCard task={task} onUpdate={fetchTasks} />
                         </div>
