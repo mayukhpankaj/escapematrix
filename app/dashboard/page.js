@@ -97,13 +97,19 @@ export default function DashboardPage() {
     e.dataTransfer.effectAllowed = 'move'
   }
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e, columnStatus) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
+    setDragOverColumn(columnStatus)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null)
   }
 
   const handleDrop = async (e, newStatus) => {
     e.preventDefault()
+    setDragOverColumn(null)
     
     if (!draggedTask) return
     
@@ -139,6 +145,7 @@ export default function DashboardPage() {
 
   const handleDragEnd = () => {
     setDraggedTask(null)
+    setDragOverColumn(null)
   }
 
   if (!isLoaded || !isSignedIn) {
