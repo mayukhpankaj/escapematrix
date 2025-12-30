@@ -107,11 +107,11 @@ user_problem_statement: "Build a full-stack habit tracking app called 'Escape Ma
 backend:
   - task: "AI Chat Endpoint - Process Query with Gemini"
     implemented: true
-    working: true
+    working: "NA"
     file: "/app/backend/main.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
@@ -125,6 +125,12 @@ backend:
       - working: true
         agent: "testing"
         comment: "Comprehensive testing of Gemini integration completed successfully! All 8 test scenarios passed: (1) PLAN responses work correctly for initial queries like 'I want to learn system design', (2) CREATETASKS responses return proper task objects with correct schema when user confirms task creation, (3) MESSAGE responses work for general conversation, (4) Task schema validation passed - LONG_TERM tasks have empty repetition fields, SHORT_TERM tasks have proper repetition_days arrays and repetition_time strings, (5) Authentication properly enforced - 401 for missing/invalid tokens, (6) Input validation working - 400 for missing/empty query. The Gemini 2.0 Flash model integration is fully functional with structured JSON responses and proper task management capabilities."
+      - working: "NA"
+        agent: "user"
+        comment: "User reported intermittent 520 errors on AI chat page indicating backend timeout issues."
+      - working: "NA"
+        agent: "main"
+        comment: "Fixed 520 timeout error by implementing comprehensive timeout handling. Changes: (1) Added asyncio.wait_for() wrapper around Gemini API call with 60-second timeout, (2) Implemented detailed logging for debugging (request start, success, timeout, errors), (3) Added specific error handling for asyncio.TimeoutError with 504 status code, (4) Improved error messages for different failure scenarios (timeout, service unavailable, parsing errors), (5) Updated frontend to display user-friendly error messages based on status codes (504 for timeout, 503 for unavailable). The Gemini call is now wrapped in asyncio.to_thread() to make it async-compatible and timeout-aware. Backend will now return 504 Gateway Timeout instead of 520 when Gemini takes too long, preventing proxy timeouts."
 
   - task: "Task Creation Endpoint"
     implemented: true
