@@ -275,8 +275,8 @@ export default function DeadlinesPage() {
                 onClick={() => router.push('/habits')}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
               >
-                <CalendarDays className="w-5 h-5" />
-                Daily Habit Tracker
+                <Zap className="w-5 h-5" />
+                Streaks
               </button>
               <button
                 onClick={() => router.push('/ai')}
