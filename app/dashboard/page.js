@@ -252,7 +252,11 @@ export default function DashboardPage() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* TO-DO Column */}
-                <div>
+                <div
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, 'TO-DO')}
+                  className="min-h-[200px]"
+                >
                   <div className="flex items-center gap-2 mb-4">
                     <ListTodo className="w-5 h-5 text-blue-600" />
                     <h3 className="text-lg font-semibold text-black">To-Do</h3>
@@ -263,7 +267,15 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     {tasks['TO-DO']?.length > 0 ? (
                       tasks['TO-DO'].map((task) => (
-                        <TaskCard key={task.id} task={task} onUpdate={fetchTasks} />
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, task)}
+                          onDragEnd={handleDragEnd}
+                          className="cursor-move"
+                        >
+                          <TaskCard task={task} onUpdate={fetchTasks} />
+                        </div>
                       ))
                     ) : (
                       <div className="bg-white rounded-lg p-6 text-center text-gray-500 border border-gray-200">
@@ -274,7 +286,11 @@ export default function DashboardPage() {
                 </div>
 
                 {/* IN-PROGRESS Column */}
-                <div>
+                <div
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, 'IN-PROGRESS')}
+                  className="min-h-[200px]"
+                >
                   <div className="flex items-center gap-2 mb-4">
                     <Clock className="w-5 h-5 text-orange-600" />
                     <h3 className="text-lg font-semibold text-black">In-Progress</h3>
@@ -285,7 +301,15 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     {tasks['IN-PROGRESS']?.length > 0 ? (
                       tasks['IN-PROGRESS'].map((task) => (
-                        <TaskCard key={task.id} task={task} onUpdate={fetchTasks} />
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, task)}
+                          onDragEnd={handleDragEnd}
+                          className="cursor-move"
+                        >
+                          <TaskCard task={task} onUpdate={fetchTasks} />
+                        </div>
                       ))
                     ) : (
                       <div className="bg-white rounded-lg p-6 text-center text-gray-500 border border-gray-200">
@@ -296,7 +320,11 @@ export default function DashboardPage() {
                 </div>
 
                 {/* COMPLETED Column */}
-                <div>
+                <div
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, 'COMPLETED')}
+                  className="min-h-[200px]"
+                >
                   <div className="flex items-center gap-2 mb-4">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
                     <h3 className="text-lg font-semibold text-black">Completed</h3>
@@ -307,7 +335,15 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     {tasks['COMPLETED']?.length > 0 ? (
                       tasks['COMPLETED'].map((task) => (
-                        <TaskCard key={task.id} task={task} onUpdate={fetchTasks} />
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, task)}
+                          onDragEnd={handleDragEnd}
+                          className="cursor-move"
+                        >
+                          <TaskCard task={task} onUpdate={fetchTasks} />
+                        </div>
                       ))
                     ) : (
                       <div className="bg-white rounded-lg p-6 text-center text-gray-500 border border-gray-200">
