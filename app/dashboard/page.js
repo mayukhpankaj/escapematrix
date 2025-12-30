@@ -21,6 +21,8 @@ export default function DashboardPage() {
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [draggedTask, setDraggedTask] = useState(null)
   const [dragOverColumn, setDragOverColumn] = useState(null)
+  const [selectedTask, setSelectedTask] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
   const router = useRouter()
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
