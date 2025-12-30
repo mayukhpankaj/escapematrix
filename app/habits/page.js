@@ -694,6 +694,155 @@ export default function HabitsPage() {
           </div>
         </div>
       )}
+
+      {/* Past Data Modal */}
+      {showPastData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h3 className="text-2xl font-bold">Past Months Data</h3>
+              <button
+                onClick={() => setShowPastData(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingPastData ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading past data...</p>
+                </div>
+              ) : pastMonths.length === 0 ? (
+                <div className="text-center py-12">
+                  <CalendarDays className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h4 className="text-xl font-semibold text-gray-700 mb-2">No Past Data</h4>
+                  <p className="text-gray-500">You don't have any habit tracking data from previous months yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {pastMonths.map((monthData, index) => {
+                    const daysInMonth = new Date(monthData.year, monthData.month, 0).getDate()
+                    
+                    // Calculate completion scores for this month
+                    const scores = []
+                    for (let day = 1; day <= daysInMonth; day++) {
+                      const dateStr = `${monthData.year}-${String(monthData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                      const dayCompletions = monthData.completions.filter(c => c.completion_date === dateStr)
+                      const score = monthData.habits.length > 0 ? (dayCompletions.length / monthData.habits.length) * 100 : 0
+                      scores.push(score)
+                    }
+
+                    // Chart data for this month
+                    const chartData = {
+                      labels: Array.from({ length: daysInMonth }, (_, i) => i + 1),
+                      datasets: [{
+                        label: 'Completion %',
+                        data: scores,
+                        borderColor: 'rgb(139, 92, 246)',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                      }]
+                    }
+
+                    const chartOptions = {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        title: {
+                          display: false
+                        }
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          max: 100,
+                          ticks: {
+                            callback: function(value) {
+                              return value + '%'
+                            }
+                          }
+                        },
+                        x: {
+                          grid: { display: false }
+                        }
+                      }
+                    }
+
+                    return (
+                      <div key={index} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                        <h4 className="text-xl font-bold text-gray-800 mb-4">{monthData.monthName}</h4>
+                        
+                        {/* Chart */}
+                        <div className="bg-white rounded-lg p-4 mb-4 h-48">
+                          <Line data={chartData} options={chartOptions} />
+                        </div>
+
+                        {/* Habit Grid */}
+                        <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead className="bg-gray-50 border-b">
+                                <tr>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase sticky left-0 bg-gray-50">
+                                    Habit
+                                  </th>
+                                  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
+                                    <th key={day} className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                                      {day}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {monthData.habits.map((habit, habitIndex) => (
+                                  <tr key={habit.id} style={{ backgroundColor: habit.color || HABIT_COLORS[habitIndex % HABIT_COLORS.length].value }}>
+                                    <td className="px-4 py-2 whitespace-nowrap font-medium text-sm text-gray-800 sticky left-0" style={{ backgroundColor: habit.color || HABIT_COLORS[habitIndex % HABIT_COLORS.length].value }}>
+                                      {habit.habit_name}
+                                    </td>
+                                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+                                      const dateStr = `${monthData.year}-${String(monthData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                                      const completed = monthData.completions.some(c => c.habit_id === habit.id && c.completion_date === dateStr)
+                                      
+                                      return (
+                                        <td key={day} className="px-2 py-2 text-center">
+                                          <div className={`w-6 h-6 mx-auto rounded-full border-2 ${
+                                            completed 
+                                              ? 'bg-purple-600 border-purple-600' 
+                                              : 'border-gray-300'
+                                          }`}>
+                                            {completed && (
+                                              <svg className="w-4 h-4 text-white mx-auto mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                            )}
+                                          </div>
+                                        </td>
+                                      )
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
