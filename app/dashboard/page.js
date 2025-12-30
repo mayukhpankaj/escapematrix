@@ -283,36 +283,57 @@ export default function DashboardPage() {
       try {
         const token = await getToken()
         
-        // Update status first
-        const statusResponse = await fetch(`${API_BASE}/tasks/${draggedTask.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: newStatus }),
-        })
-
-        if (statusResponse.ok) {
-          // Then update order
-          await fetch(`${API_BASE}/tasks/reorder`, {
-            method: 'POST',
+        // Check if it's a deadline or regular task
+        if (draggedTask.isDeadline) {
+          // Update deadline status
+          const statusMap = {
+            'TO-DO': 'PENDING',
+            'IN-PROGRESS': 'IN-PROGRESS',
+            'COMPLETED': 'COMPLETED'
+          }
+          
+          await fetch(`${API_BASE}/deadlines/${draggedTask.id}`, {
+            method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({
-              task_id: draggedTask.id,
-              new_status: newStatus,
-              new_order: dropIndex,
-              task_type: draggedTask.task_type
-            }),
+            body: JSON.stringify({ status: statusMap[newStatus] }),
           })
           
           await fetchTasks()
         } else {
-          console.error('Failed to update task status, rolling back...')
-          await fetchTasks()
+          // Regular task - Update status first
+          const statusResponse = await fetch(`${API_BASE}/tasks/${draggedTask.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status: newStatus }),
+          })
+
+          if (statusResponse.ok) {
+            // Then update order
+            await fetch(`${API_BASE}/tasks/reorder`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                task_id: draggedTask.id,
+                new_status: newStatus,
+                new_order: dropIndex,
+                task_type: draggedTask.task_type
+              }),
+            })
+            
+            await fetchTasks()
+          } else {
+            console.error('Failed to update task status, rolling back...')
+            await fetchTasks()
+          }
         }
       } catch (error) {
         console.error('Error updating task:', error)
