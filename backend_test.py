@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """
-Backend Test for Escape Matrix App - AI Chat Endpoint with Gemini Integration
-Tests the /api/processquery endpoint with Gemini API integration
+Backend Test for Escape Matrix App - AI Chat Endpoint with Timeout Handling
+Tests the /api/processquery endpoint with Gemini API integration and timeout fixes
 """
 import requests
 import json
 import jwt
 from datetime import datetime, timedelta
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Use the local FastAPI server for testing
-API_BASE_URL = "http://localhost:8000"  # FastAPI runs locally on port 8000
+# Use the production URL for testing as specified in environment
+NEXT_PUBLIC_BASE_URL = os.getenv("NEXT_PUBLIC_BASE_URL", "https://task-master-444.preview.emergentagent.com")
+API_BASE_URL = f"{NEXT_PUBLIC_BASE_URL}/api"  # Backend API routes are prefixed with /api
 
 def create_test_jwt(user_id="test_user_123"):
     """Create a test JWT token for authentication"""
