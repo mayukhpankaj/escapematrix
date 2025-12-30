@@ -134,7 +134,13 @@ export default function DashboardPage() {
     
     try {
       const token = await getToken()
-      await fetch(`${API_BASE}/tasks/${selectedTask.id}`, {
+      
+      // Check if it's a deadline or regular task
+      const endpoint = selectedTask.isDeadline 
+        ? `${API_BASE}/deadlines/${selectedTask.id}`
+        : `${API_BASE}/tasks/${selectedTask.id}`
+      
+      await fetch(endpoint, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
