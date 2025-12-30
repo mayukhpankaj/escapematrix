@@ -509,20 +509,24 @@ def test_error_handling_improvements():
         return False
 
 def main():
-    print("=" * 70)
-    print("  ESCAPE MATRIX - AI CHAT ENDPOINT TESTS (GEMINI INTEGRATION)")
-    print("=" * 70)
+    print("=" * 80)
+    print("  ESCAPE MATRIX - AI CHAT TIMEOUT HANDLING TESTS")
+    print("=" * 80)
     print(f"Testing API at: {API_BASE_URL}")
+    print("Testing timeout handling fix for 520 error issue")
     
     tests = [
         test_health_check,
         test_ai_chat_plan_response,
         test_ai_chat_createtasks_response,
         test_ai_chat_message_response,
+        test_backward_compatibility,
+        test_timeout_mechanism,
+        test_error_handling_improvements,
         test_ai_chat_no_auth_header,
         test_ai_chat_invalid_jwt,
-        test_ai_chat_missing_query,
-        test_ai_chat_empty_query,
+        test_ai_chat_missing_messages,
+        test_ai_chat_empty_messages,
     ]
     
     passed = 0
@@ -538,23 +542,24 @@ def main():
             print(f"❌ Test failed with exception: {e}")
             failed += 1
     
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 80)
     print(f"  RESULTS: {passed} passed, {failed} failed")
-    print("=" * 70)
+    print("=" * 80)
     
     if failed == 0:
-        print("\n✅ All AI Chat endpoint tests passed!")
-        print("🎉 The /api/processquery endpoint with Gemini integration is working correctly!")
+        print("\n✅ All AI Chat timeout handling tests passed!")
+        print("🎉 The /api/processquery endpoint timeout fix is working correctly!")
         print("\n📝 Test Summary:")
-        print("   ✅ PLAN responses work correctly")
-        print("   ✅ CREATETASKS responses with proper task schema")
-        print("   ✅ MESSAGE responses work correctly")
+        print("   ✅ Normal operation works correctly")
+        print("   ✅ Timeout mechanism is properly implemented")
+        print("   ✅ Error handling provides user-friendly messages")
+        print("   ✅ Backward compatibility maintained")
         print("   ✅ Authentication is properly enforced")
         print("   ✅ Input validation works correctly")
-        print("   ✅ Error handling is appropriate")
+        print("   ✅ Logging and debugging features in place")
     else:
         print(f"\n❌ {failed} test(s) failed!")
-        print("🔧 Please check the Gemini integration implementation")
+        print("🔧 Please check the timeout handling implementation")
     
     return failed == 0
 
