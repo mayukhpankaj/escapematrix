@@ -352,18 +352,19 @@ export default function DeadlinesPage() {
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Timeline View</h3>
                 <div className="overflow-x-auto">
-                  <div className="min-w-[800px]">
+                  <div className="min-w-[1200px]">
                     {/* Timeline Header */}
                     <div className="flex mb-2 pb-2 border-b">
-                      <div className="w-48 flex-shrink-0"></div>
+                      <div className="w-64 flex-shrink-0"></div>
                       <div className="flex-1 flex">
                         {days.map((day, index) => (
                           <div 
                             key={index} 
-                            className="flex-1 text-center text-xs text-gray-600 px-1"
+                            className="flex-1 text-center text-xs text-gray-600 px-1 border-l border-gray-200"
                           >
                             <div className="font-medium">{day.getDate()}</div>
                             <div className="text-gray-400">{day.toLocaleDateString('en-US', { month: 'short' })}</div>
+                            <div className="text-gray-400 text-[10px]">00:00</div>
                           </div>
                         ))}
                       </div>
@@ -373,119 +374,80 @@ export default function DeadlinesPage() {
                     {deadlines.map((deadline) => {
                       const StatusIcon = STATUS_COLORS[deadline.status].icon
                       const position = calculateBarPosition(deadline.start_time, deadline.deadline_time, minDate, maxDate)
+                      const timeRemaining = getTimeRemaining(deadline.deadline_time)
                       
                       return (
-                        <div key={deadline.id} className="flex items-center mb-3 hover:bg-gray-50 py-2 rounded">
-                          <div className="w-48 flex-shrink-0 pr-4">
-                            <div className="font-medium text-sm truncate">{deadline.task_name}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={`text-xs px-2 py-0.5 rounded ${PRIORITY_COLORS[deadline.priority].bg} ${PRIORITY_COLORS[deadline.priority].text}`}>
+                        <div key={deadline.id} className="flex items-center mb-4 hover:bg-gray-50 py-3 rounded-lg px-2 group">
+                          <div className="w-64 flex-shrink-0 pr-4">
+                            <div className="font-bold text-base text-gray-900 mb-1">{deadline.task_name}</div>
+                            <div className={`text-sm mb-2 ${timeRemaining.isOverdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                              {timeRemaining.isOverdue ? '⚠️ ' : '⏱️ '}
+                              {timeRemaining.text} remaining
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-xs px-2 py-1 rounded font-medium ${PRIORITY_COLORS[deadline.priority].bg} ${PRIORITY_COLORS[deadline.priority].text}`}>
                                 {deadline.priority}
                               </span>
-                              <span className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 ${STATUS_COLORS[deadline.status].bg} ${STATUS_COLORS[deadline.status].text}`}>
+                              <span className={`text-xs px-2 py-1 rounded flex items-center gap-1 font-medium ${STATUS_COLORS[deadline.status].bg} ${STATUS_COLORS[deadline.status].text}`}>
                                 <StatusIcon className="w-3 h-3" />
                                 {deadline.status}
                               </span>
+                              <button
+                                onClick={() => deleteDeadline(deadline.id)}
+                                className="text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Delete deadline"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex-1 relative h-8">
+                          <div className="flex-1 relative h-10">
+                            {/* Hour markers */}
+                            <div className="absolute inset-0 flex">
+                              {days.map((_, index) => (
+                                <div key={index} className="flex-1 border-l border-gray-100">
+                                  <div className="h-full flex">
+                                    {[0, 6, 12, 18].map((hour) => (
+                                      <div key={hour} className="flex-1 border-l border-gray-50" />
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
                             {/* Today marker */}
                             {now >= minDate && now <= maxDate && (
                               <div 
-                                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
+                                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
                                 style={{ 
                                   left: `${((now - minDate) / (maxDate - minDate)) * 100}%` 
                                 }}
-                              />
+                              >
+                                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                                  <div className="bg-red-500 text-white text-[10px] px-1 rounded whitespace-nowrap">Now</div>
+                                </div>
+                              </div>
                             )}
+                            
                             {/* Gantt Bar */}
                             <div
-                              className={`absolute top-1 h-6 rounded cursor-pointer transition-all hover:opacity-80 ${
+                              className={`absolute top-1 h-8 rounded-lg cursor-pointer transition-all hover:shadow-lg z-10 flex items-center justify-center text-white text-xs font-semibold ${
                                 deadline.status === 'COMPLETED' ? 'bg-green-500' :
                                 deadline.status === 'OVERDUE' ? 'bg-red-500' :
                                 deadline.status === 'IN-PROGRESS' ? 'bg-blue-500' :
                                 'bg-gray-400'
                               }`}
                               style={position}
-                              title={`${deadline.task_name}: ${formatDate(deadline.start_time)} - ${formatDate(deadline.deadline_time)}`}
-                            />
+                              title={`${deadline.task_name}\nStart: ${formatDate(deadline.start_time)}\nDeadline: ${formatDate(deadline.deadline_time)}\nRemaining: ${timeRemaining.text}`}
+                            >
+                              <span className="px-2 truncate">{deadline.task_name}</span>
+                            </div>
                           </div>
                         </div>
                       )
                     })}
                   </div>
                 </div>
-              </div>
-
-              {/* Deadline Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {deadlines.map((deadline) => {
-                  const StatusIcon = STATUS_COLORS[deadline.status].icon
-                  const daysUntil = Math.ceil((new Date(deadline.deadline_time) - now) / (1000 * 60 * 60 * 24))
-                  
-                  return (
-                    <div key={deadline.id} className="bg-white rounded-lg shadow-md p-4 border-l-4" style={{ borderColor: PRIORITY_COLORS[deadline.priority].border.replace('border-', '#') }}>
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-gray-800 flex-1">{deadline.task_name}</h4>
-                        <button
-                          onClick={() => deleteDeadline(deadline.id)}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      
-                      {deadline.task_description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{deadline.task_description}</p>
-                      )}
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-600">{formatDate(deadline.deadline_time)}</span>
-                        </div>
-                        
-                        {deadline.status !== 'COMPLETED' && deadline.status !== 'OVERDUE' && (
-                          <div className="text-sm text-gray-500">
-                            {daysUntil > 0 ? `${daysUntil} days remaining` : daysUntil === 0 ? 'Due today!' : 'Overdue'}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-1 rounded ${PRIORITY_COLORS[deadline.priority].bg} ${PRIORITY_COLORS[deadline.priority].text}`}>
-                            {deadline.priority}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${STATUS_COLORS[deadline.status].bg} ${STATUS_COLORS[deadline.status].text}`}>
-                            <StatusIcon className="w-3 h-3" />
-                            {deadline.status}
-                          </span>
-                        </div>
-
-                        {deadline.status !== 'COMPLETED' && (
-                          <div className="flex gap-2 mt-3">
-                            {deadline.status === 'PENDING' && (
-                              <Button
-                                onClick={() => updateStatus(deadline.id, 'IN-PROGRESS')}
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 text-xs"
-                              >
-                                Start
-                              </Button>
-                            )}
-                            <Button
-                              onClick={() => updateStatus(deadline.id, 'COMPLETED')}
-                              size="sm"
-                              className="flex-1 text-xs bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              Complete
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
               </div>
             </>
           )}
