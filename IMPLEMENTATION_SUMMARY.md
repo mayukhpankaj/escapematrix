@@ -256,7 +256,7 @@ All core features requested have been implemented:
 ## 🚀 Ready to Use!
 
 The app is now live and ready to use at:
-**https://escapematrix.preview.emergentagent.com**
+**https://task-master-444.preview.emergentagent.com**
 
 Sign in with your Google account and start tracking your habits!
 
