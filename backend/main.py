@@ -1190,6 +1190,8 @@ async def update_deadline(
             update_data["status"] = deadline_data.status
         if deadline_data.priority:
             update_data["priority"] = deadline_data.priority
+        if deadline_data.markdown_content is not None:
+            update_data["markdown_content"] = deadline_data.markdown_content
         
         # Update in Supabase
         response = supabase.table("deadlines").update(update_data).eq("id", deadline_id).eq("user_id", user_id).execute()
