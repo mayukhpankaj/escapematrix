@@ -83,6 +83,20 @@ export default function HabitsPage() {
     }
   }, [isSignedIn, currentMonth])
 
+  // Auto-scroll to current day after data loads
+  useEffect(() => {
+    if (!loading && currentDayRef.current && scrollContainerRef.current) {
+      // Small delay to ensure DOM is fully rendered
+      setTimeout(() => {
+        currentDayRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        })
+      }, 100)
+    }
+  }, [loading, habits])
+
   const fetchData = async () => {
     try {
       const token = await getToken()
