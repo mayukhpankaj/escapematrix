@@ -404,7 +404,32 @@ export default function HabitsPage() {
             </div>
           ) : (
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="overflow-x-auto">
+              <div 
+                ref={scrollContainerRef}
+                className="overflow-x-auto custom-scrollbar"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#a855f7 #f3f4f6'
+                }}
+              >
+                <style jsx>{`
+                  .custom-scrollbar::-webkit-scrollbar {
+                    height: 12px;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-track {
+                    background: #f3f4f6;
+                    border-radius: 10px;
+                    margin: 0 10px;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: linear-gradient(to right, #a855f7, #7c3aed);
+                    border-radius: 10px;
+                    border: 2px solid #f3f4f6;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(to right, #9333ea, #6d28d9);
+                  }
+                `}</style>
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
@@ -412,7 +437,11 @@ export default function HabitsPage() {
                         Habit
                       </th>
                       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
-                        <th key={day} className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider ${day === currentDay ? 'bg-purple-100 text-purple-700' : 'text-gray-500'}`}>
+                        <th 
+                          key={day} 
+                          ref={day === currentDay ? currentDayRef : null}
+                          className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider ${day === currentDay ? 'bg-purple-100 text-purple-700' : 'text-gray-500'}`}
+                        >
                           {day}
                         </th>
                       ))}
