@@ -286,18 +286,29 @@ async def get_long_term_tasks(
     user_id: str = Depends(verify_clerk_token)
 ):
     """
-    Get all long-term tasks for the authenticated user
+    Get all long-term tasks for the authenticated user with their children
     
     Args:
         user_id: Authenticated user ID from Clerk
     
     Returns:
-        List of long-term tasks
+        List of long-term tasks with progress and children count
     """
     try:
-        response = supabase.table("tasks").select("*").eq("user_id", user_id).eq("task_type", "LONG_TERM").order("created_at", desc=True).execute()
+        # Fetch long-term tasks
+        response = supabase.table("long_term_tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
         
-        return response.data if response.data else []
+        long_term_tasks = response.data if response.data else []
+        
+        # Add task_type and fetch children count for each task
+        for task in long_term_tasks:
+            task["task_type"] = "LONG_TERM"
+            
+            # Get children count
+            children_response = supabase.table("short_term_tasks").select("id", count="exact").eq("parent_task_id", task["id"]).execute()
+            task["children_count"] = children_response.count if children_response.count else 0
+        
+        return long_term_tasks
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching long-term tasks: {str(e)}")
