@@ -871,6 +871,187 @@ async def make_call(
         raise HTTPException(status_code=500, detail=f"Error initiating call: {str(e)}")
 
 
+# ============= DAILY HABITS ENDPOINTS =============
+
+class HabitCreate(BaseModel):
+    """Model for creating a new habit"""
+    habit_name: str = Field(..., min_length=1, max_length=100)
+    color: Optional[str] = "#8b5cf6"
+
+
+@app.get("/api/habits")
+async def get_habits(user_id: str = Depends(verify_clerk_token)):
+    """
+    Get all habits for the authenticated user
+    
+    Args:
+        user_id: Authenticated user ID
+    
+    Returns:
+        List of habits with their completion status for current month
+    """
+    try:
+        # Get all habits for the user
+        habits_response = supabase.table("daily_habits").select("*").eq("user_id", user_id).order("display_order", desc=False).execute()
+        
+        habits = habits_response.data if habits_response.data else []
+        
+        return habits
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching habits: {str(e)}")
+
+
+@app.post("/api/habits")
+async def create_habit(
+    habit_data: HabitCreate,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Create a new habit
+    
+    Args:
+        habit_data: Habit information
+        user_id: Authenticated user ID
+    
+    Returns:
+        Created habit data
+    """
+    try:
+        # Prepare habit data
+        new_habit = {
+            "user_id": user_id,
+            "habit_name": habit_data.habit_name,
+            "color": habit_data.color or "#8b5cf6"
+        }
+        
+        # Insert into Supabase
+        response = supabase.table("daily_habits").insert(new_habit).execute()
+        
+        if response.data:
+            return response.data[0]
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create habit")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating habit: {str(e)}")
+
+
+@app.delete("/api/habits/{habit_id}")
+async def delete_habit(
+    habit_id: str,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Delete a habit
+    
+    Args:
+        habit_id: Habit UUID
+        user_id: Authenticated user ID
+    
+    Returns:
+        Success message
+    """
+    try:
+        # Verify ownership and delete
+        response = supabase.table("daily_habits").delete().eq("id", habit_id).eq("user_id", user_id).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Habit not found or unauthorized")
+        
+        return {"success": True, "message": "Habit deleted successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting habit: {str(e)}")
+
+
+@app.get("/api/habits/completions/{year}/{month}")
+async def get_habit_completions(
+    year: int,
+    month: int,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Get all habit completions for a specific month
+    
+    Args:
+        year: Year (e.g., 2025)
+        month: Month (1-12)
+        user_id: Authenticated user ID
+    
+    Returns:
+        List of habit completions with habit details
+    """
+    try:
+        from datetime import date
+        
+        # Calculate first and last day of the month
+        first_day = date(year, month, 1)
+        if month == 12:
+            last_day = date(year + 1, 1, 1)
+        else:
+            last_day = date(year, month + 1, 1)
+        
+        # Get all completions for the month
+        completions_response = supabase.table("habit_completions").select("*").eq("user_id", user_id).gte("completion_date", first_day.isoformat()).lt("completion_date", last_day.isoformat()).execute()
+        
+        completions = completions_response.data if completions_response.data else []
+        
+        return completions
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching completions: {str(e)}")
+
+
+@app.post("/api/habits/completions")
+async def toggle_habit_completion(
+    completion_data: dict,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Toggle a habit completion for a specific date
+    
+    Args:
+        completion_data: {habit_id: str, date: str (YYYY-MM-DD)}
+        user_id: Authenticated user ID
+    
+    Returns:
+        Updated completion status
+    """
+    try:
+        habit_id = completion_data.get("habit_id")
+        completion_date = completion_data.get("date")
+        
+        if not habit_id or not completion_date:
+            raise HTTPException(status_code=400, detail="habit_id and date are required")
+        
+        # Check if completion already exists
+        existing = supabase.table("habit_completions").select("*").eq("habit_id", habit_id).eq("completion_date", completion_date).execute()
+        
+        if existing.data:
+            # Delete the completion (toggle off)
+            supabase.table("habit_completions").delete().eq("habit_id", habit_id).eq("completion_date", completion_date).execute()
+            return {"completed": False, "habit_id": habit_id, "date": completion_date}
+        else:
+            # Create the completion (toggle on)
+            new_completion = {
+                "habit_id": habit_id,
+                "user_id": user_id,
+                "completion_date": completion_date
+            }
+            supabase.table("habit_completions").insert(new_completion).execute()
+            return {"completed": True, "habit_id": habit_id, "date": completion_date}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error toggling completion: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
