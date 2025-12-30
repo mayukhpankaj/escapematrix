@@ -95,6 +95,31 @@ export default function DashboardPage() {
     fetchTasks()
   }
 
+  const handleCardClick = (task) => {
+    setSelectedTask(task)
+    setShowDetailModal(true)
+  }
+
+  const handleDeleteFromModal = async () => {
+    if (!selectedTask) return
+    
+    try {
+      const token = await getToken()
+      await fetch(`${API_BASE}/tasks/${selectedTask.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      setShowDetailModal(false)
+      setSelectedTask(null)
+      await fetchTasks()
+    } catch (error) {
+      console.error('Error deleting task:', error)
+    }
+  }
+
   // Drag and Drop handlers
   const handleDragStart = (e, task) => {
     setDraggedTask(task)
