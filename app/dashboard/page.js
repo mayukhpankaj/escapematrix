@@ -540,6 +540,18 @@ export default function DashboardPage() {
           onTaskCreated={handleTaskCreated}
         />
       )}
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        task={selectedTask}
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false)
+          setSelectedTask(null)
+        }}
+        onUpdate={fetchTasks}
+        onDelete={handleDeleteFromModal}
+      />
     </div>
   )
 }
