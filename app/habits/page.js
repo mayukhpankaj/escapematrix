@@ -305,58 +305,84 @@ export default function HabitsPage() {
   return (
     <div className="flex h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
-        <div className="flex items-center justify-between p-6 border-b">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Escape Matrix
-          </h1>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
-            <X className="w-6 h-6" />
-          </button>
+      <aside
+        className={`
+          fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40 border-r border-gray-200
+          w-80 transition-transform duration-300 ease-in-out flex flex-col
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        {/* Top Section - Logo and Navigation */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 pt-20 lg:pt-6">
+            {/* Logo */}
+            <div className="mb-8">
+              <Image 
+                src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
+                alt="Escape Matrix"
+                width={280}
+                height={67}
+                className="w-full h-auto object-contain"
+              />
+            </div>
+
+            {/* Navigation */}
+            <nav className="space-y-2">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <ListTodo className="w-5 h-5" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => router.push('/long-term')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <Target className="w-5 h-5" />
+                Long Term Goals
+              </button>
+              <button
+                onClick={() => router.push('/habits')}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
+              >
+                <CalendarDays className="w-5 h-5" />
+                Daily Habit Tracker
+              </button>
+              <button
+                onClick={() => router.push('/ai')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <Sparkles className="w-5 h-5" />
+                AI
+              </button>
+              <button
+                onClick={() => router.push('/call-me')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <Phone className="w-5 h-5" />
+                Call Me
+              </button>
+            </nav>
+          </div>
         </div>
 
-        <nav className="p-4 space-y-2">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors"
-          >
-            <ListTodo className="w-5 h-5 mr-3" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => router.push('/long-term')}
-            className="flex items-center w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors"
-          >
-            <Target className="w-5 h-5 mr-3" />
-            Long Term Goals
-          </button>
-          <button
-            onClick={() => router.push('/habits')}
-            className="flex items-center w-full px-4 py-3 text-white bg-purple-600 rounded-lg"
-          >
-            <CalendarDays className="w-5 h-5 mr-3" />
-            Daily Habit Tracker
-          </button>
-          <button
-            onClick={() => router.push('/ai')}
-            className="flex items-center w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors"
-          >
-            <Sparkles className="w-5 h-5 mr-3" />
-            AI
-          </button>
-          <button
-            onClick={() => router.push('/call-me')}
-            className="flex items-center w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 transition-colors"
-          >
-            <Phone className="w-5 h-5 mr-3" />
-            Call Me
-          </button>
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-          <UserButton afterSignOutUrl="/" />
+        {/* Bottom Section - User Profile */}
+        <div className="p-6 border-t border-gray-200">
+          <div className="flex items-center gap-3">
+            <UserButton afterSignOutUrl="/" />
+            <span className="text-sm text-gray-600">Profile</span>
+          </div>
         </div>
       </aside>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Main Content */}
       <main className="flex-1 lg:ml-64 overflow-auto">
