@@ -232,9 +232,9 @@ def test_ai_chat_invalid_jwt():
         print(f"❌ Test failed with exception: {e}")
         return False
 
-def test_ai_chat_missing_query():
-    """Test AI chat endpoint without query field"""
-    print("\n🔍 Testing AI chat endpoint without query field...")
+def test_ai_chat_missing_messages():
+    """Test AI chat endpoint without messages field"""
+    print("\n🔍 Testing AI chat endpoint without messages field...")
     
     token = create_test_jwt("test_user_123")
     headers = {
@@ -242,10 +242,10 @@ def test_ai_chat_missing_query():
         "Content-Type": "application/json"
     }
     
-    payload = {}  # Missing query field
+    payload = {}  # Missing messages field
     
     try:
-        response = requests.post(f"{API_BASE_URL}/api/processquery", 
+        response = requests.post(f"{API_BASE_URL}/processquery", 
                                json=payload, 
                                headers=headers,
                                timeout=10)
@@ -255,8 +255,8 @@ def test_ai_chat_missing_query():
         if response.status_code == 400:
             data = response.json()
             print(f"   Response: {json.dumps(data, indent=2)}")
-            assert "Query is required" in data.get("detail", ""), "Should indicate missing query"
-            print("✅ Missing query test passed!")
+            assert "Messages array is required" in data.get("detail", ""), "Should indicate missing messages"
+            print("✅ Missing messages test passed!")
             return True
         else:
             print(f"❌ Expected 400, got {response.status_code}")
