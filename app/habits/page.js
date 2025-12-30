@@ -409,7 +409,7 @@ export default function HabitsPage() {
                 <p className="text-sm text-gray-500">{monthName}</p>
               </div>
             </div>
-            <Button onClick={() => setShowAddHabit(true)} className="bg-purple-600 hover:bg-purple-700">
+            <Button onClick={() => setShowAddHabit(true)} className="bg-black hover:bg-gray-800 text-white">
               <Plus className="w-4 h-4 mr-2" />
               Add Habit
             </Button>
