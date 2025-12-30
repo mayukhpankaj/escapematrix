@@ -267,9 +267,9 @@ def test_ai_chat_missing_messages():
         print(f"❌ Test failed with exception: {e}")
         return False
 
-def test_ai_chat_empty_query():
-    """Test AI chat endpoint with empty query string"""
-    print("\n🔍 Testing AI chat endpoint with empty query string...")
+def test_ai_chat_empty_messages():
+    """Test AI chat endpoint with empty messages array"""
+    print("\n🔍 Testing AI chat endpoint with empty messages array...")
     
     token = create_test_jwt("test_user_123")
     headers = {
@@ -278,11 +278,11 @@ def test_ai_chat_empty_query():
     }
     
     payload = {
-        "query": ""  # Empty query
+        "messages": []  # Empty messages array
     }
     
     try:
-        response = requests.post(f"{API_BASE_URL}/api/processquery", 
+        response = requests.post(f"{API_BASE_URL}/processquery", 
                                json=payload, 
                                headers=headers,
                                timeout=10)
@@ -292,8 +292,8 @@ def test_ai_chat_empty_query():
         if response.status_code == 400:
             data = response.json()
             print(f"   Response: {json.dumps(data, indent=2)}")
-            assert "Query is required" in data.get("detail", ""), "Should indicate empty query"
-            print("✅ Empty query test passed!")
+            assert "Messages array is required" in data.get("detail", ""), "Should indicate empty messages"
+            print("✅ Empty messages test passed!")
             return True
         else:
             print(f"❌ Expected 400, got {response.status_code}")
