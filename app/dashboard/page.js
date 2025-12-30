@@ -113,53 +113,144 @@ export default function DashboardPage() {
     
     if (!draggedTask) return
     
-    // Don't update if dropped in same column
-    if (draggedTask.status === newStatus) {
-      setDraggedTask(null)
-      return
-    }
-
-    // Store old status for rollback if needed
     const oldStatus = draggedTask.status
     
-    // OPTIMISTIC UPDATE - Update UI immediately
-    setTasks(prevTasks => {
-      const newTasks = { ...prevTasks }
-      
-      // Remove from old column
-      newTasks[oldStatus] = newTasks[oldStatus].filter(t => t.id !== draggedTask.id)
-      
-      // Add to new column with updated status
-      const updatedTask = { ...draggedTask, status: newStatus }
-      newTasks[newStatus] = [...newTasks[newStatus], updatedTask]
-      
-      return newTasks
-    })
+    // Get the drop position
+    const dropTarget = e.target
+    const dropRect = dropTarget.getBoundingClientRect()
+    const dropY = e.clientY - dropRect.top
     
-    // Reset dragged task
-    setDraggedTask(null)
-
-    // Make API call in background
-    try {
-      const token = await getToken()
-      const response = await fetch(`${API_BASE}/tasks/${draggedTask.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      })
-
-      if (!response.ok) {
-        // If API call fails, rollback the optimistic update
-        console.error('Failed to update task status, rolling back...')
-        await fetchTasks() // Refresh to get correct state
+    // Find which task we're dropping near
+    const columnTasks = tasks[newStatus] || []
+    let dropIndex = columnTasks.length // Default to end
+    
+    // Calculate drop position based on mouse Y position
+    const cardElements = dropTarget.querySelectorAll('[data-task-id]')
+    for (let i = 0; i < cardElements.length; i++) {
+      const cardRect = cardElements[i].getBoundingClientRect()
+      const cardMiddle = cardRect.top + cardRect.height / 2 - dropRect.top
+      
+      if (dropY < cardMiddle) {
+        dropIndex = i
+        break
       }
-    } catch (error) {
-      console.error('Error updating task:', error)
-      // Rollback on error
-      await fetchTasks()
+    }
+    
+    // Check if we're reordering within the same column
+    const isSameColumn = oldStatus === newStatus
+    
+    if (isSameColumn) {
+      // Reordering within same column
+      const oldIndex = columnTasks.findIndex(t => t.id === draggedTask.id)
+      
+      if (oldIndex === dropIndex) {
+        // Dropped in same position, do nothing
+        setDraggedTask(null)
+        return
+      }
+      
+      // OPTIMISTIC UPDATE - Reorder immediately
+      setTasks(prevTasks => {
+        const newTasks = { ...prevTasks }
+        const columnTasksCopy = [...newTasks[newStatus]]
+        
+        // Remove from old position
+        const [movedTask] = columnTasksCopy.splice(oldIndex, 1)
+        
+        // Insert at new position
+        const adjustedDropIndex = dropIndex > oldIndex ? dropIndex - 1 : dropIndex
+        columnTasksCopy.splice(adjustedDropIndex, 0, movedTask)
+        
+        newTasks[newStatus] = columnTasksCopy
+        return newTasks
+      })
+      
+      setDraggedTask(null)
+      
+      // Call reorder API
+      try {
+        const token = await getToken()
+        const adjustedDropIndex = dropIndex > columnTasks.findIndex(t => t.id === draggedTask.id) ? dropIndex - 1 : dropIndex
+        
+        await fetch(`${API_BASE}/tasks/reorder`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            task_id: draggedTask.id,
+            new_status: newStatus,
+            new_order: adjustedDropIndex,
+            task_type: draggedTask.task_type
+          }),
+        })
+        
+        // Refresh to get correct order from server
+        await fetchTasks()
+      } catch (error) {
+        console.error('Error reordering task:', error)
+        await fetchTasks() // Rollback on error
+      }
+    } else {
+      // Moving to different column
+      // OPTIMISTIC UPDATE - Update UI immediately
+      setTasks(prevTasks => {
+        const newTasks = { ...prevTasks }
+        
+        // Remove from old column
+        newTasks[oldStatus] = newTasks[oldStatus].filter(t => t.id !== draggedTask.id)
+        
+        // Add to new column at drop position
+        const updatedTask = { ...draggedTask, status: newStatus }
+        const newColumnTasks = [...newTasks[newStatus]]
+        newColumnTasks.splice(dropIndex, 0, updatedTask)
+        newTasks[newStatus] = newColumnTasks
+        
+        return newTasks
+      })
+      
+      setDraggedTask(null)
+
+      // Make API call in background
+      try {
+        const token = await getToken()
+        
+        // Update status first
+        const statusResponse = await fetch(`${API_BASE}/tasks/${draggedTask.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        })
+
+        if (statusResponse.ok) {
+          // Then update order
+          await fetch(`${API_BASE}/tasks/reorder`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              task_id: draggedTask.id,
+              new_status: newStatus,
+              new_order: dropIndex,
+              task_type: draggedTask.task_type
+            }),
+          })
+          
+          await fetchTasks()
+        } else {
+          console.error('Failed to update task status, rolling back...')
+          await fetchTasks()
+        }
+      } catch (error) {
+        console.error('Error updating task:', error)
+        await fetchTasks()
+      }
     }
   }
 
