@@ -122,19 +122,12 @@ export default function DashboardPage() {
     try {
       const token = await getToken()
       const response = await fetch(`${API_BASE}/tasks/${draggedTask.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          status: newStatus,
-          task_name: draggedTask.task_name,
-          task_description: draggedTask.task_description,
-          priority: draggedTask.priority,
-          repetition_days: draggedTask.repetition_days,
-          repetition_time: draggedTask.repetition_time
-        }),
+        body: JSON.stringify({ status: newStatus }),
       })
 
       if (response.ok) {
