@@ -65,8 +65,10 @@ class TaskCreate(BaseModel):
         default="TO-DO",
         pattern="^(TO-DO|IN-PROGRESS|COMPLETED)$"
     )
-    repetition_days: Optional[List[str]] = None  # ['MONDAY', 'WEDNESDAY', 'FRIDAY']
-    repetition_time: Optional[str] = None  # '09:00 AM'
+    repetition_days: Optional[List[str]] = None
+    repetition_time: Optional[str] = None
+    parent_task_id: Optional[str] = None  # For linking short-term to long-term
+    markdown_content: Optional[str] = None
 
 
 class TaskUpdate(BaseModel):
@@ -77,6 +79,7 @@ class TaskUpdate(BaseModel):
     priority: Optional[str] = None
     repetition_days: Optional[List[str]] = None
     repetition_time: Optional[str] = None
+    markdown_content: Optional[str] = None
 
 
 class TaskResponse(BaseModel):
@@ -88,6 +91,13 @@ class TaskResponse(BaseModel):
     task_type: str
     status: str
     priority: str
+    repetition_days: Optional[List[str]] = None
+    repetition_time: Optional[str] = None
+    parent_task_id: Optional[str] = None
+    progress: Optional[int] = None  # For long-term tasks
+    markdown_content: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
     repetition_days: Optional[List[str]]
     repetition_time: Optional[str]
     created_at: str
