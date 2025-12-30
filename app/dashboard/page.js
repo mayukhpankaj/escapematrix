@@ -391,6 +391,7 @@ export default function DashboardPage() {
                       tasks['TO-DO'].map((task) => (
                         <div
                           key={task.id}
+                          data-task-id={task.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, task)}
                           onDragEnd={handleDragEnd}
