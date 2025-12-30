@@ -3,9 +3,14 @@
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Clock, CheckCircle, Trash2, AlertCircle } from 'lucide-react'
+import { Clock, AlertCircle, MoreVertical, Trash2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const API_BASE = '/backend-api/api'
 
@@ -26,29 +31,6 @@ const priorityLabels = {
 export default function TaskCard({ task, onUpdate }) {
   const [loading, setLoading] = useState(false)
   const { getToken } = useAuth()
-
-  const updateTaskStatus = async (newStatus) => {
-    setLoading(true)
-    try {
-      const token = await getToken()
-      const response = await fetch(`${API_BASE}/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      })
-
-      if (response.ok) {
-        onUpdate()
-      }
-    } catch (error) {
-      console.error('Error updating task:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const deleteTask = async () => {
     if (!confirm('Are you sure you want to delete this task?')) return
@@ -77,16 +59,38 @@ export default function TaskCard({ task, onUpdate }) {
     <Card className="hover:shadow-lg transition-shadow border border-gray-200">
       <CardContent className="p-4">
         <div className="space-y-3">
-          {/* Task Title */}
+          {/* Task Title & Menu */}
           <div className="flex items-start justify-between gap-2">
-            <h4 className="font-semibold text-black line-clamp-2">{task.task_name}</h4>
-            {/* Only show priority for SHORT_TERM tasks */}
-            {task.task_type === 'SHORT_TERM' && (
-              <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
-                {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
-                {priorityLabels[task.priority]?.split(' ')[0]}
-              </Badge>
-            )}
+            <div className="flex-1">
+              <h4 className="font-semibold text-black line-clamp-2">{task.task_name}</h4>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Priority Badge */}
+              {task.task_type === 'SHORT_TERM' && (
+                <Badge className={priorityColors[task.priority] || priorityColors['NOTURGENT-NOTIMPORTANT']}>
+                  {task.priority === 'URGENT-IMPORTANT' && <AlertCircle className="w-3 h-3 mr-1" />}
+                  {priorityLabels[task.priority]?.split(' ')[0]}
+                </Badge>
+              )}
+              {/* Three-dot Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger 
+                  disabled={loading}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                >
+                  <MoreVertical className="w-5 h-5 text-gray-600" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem 
+                    onClick={deleteTask}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* Task Description */}
@@ -111,52 +115,6 @@ export default function TaskCard({ task, onUpdate }) {
                 {task.repetition_time}
               </Badge>
             )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-2 border-t border-gray-200">
-            {task.status === 'TO-DO' && (
-              <Button
-                onClick={() => updateTaskStatus('IN-PROGRESS')}
-                disabled={loading}
-                size="sm"
-                className="flex-1 bg-black hover:bg-gray-800 text-white"
-              >
-                <Clock className="w-4 h-4 mr-1" />
-                Start
-              </Button>
-            )}
-            {task.status === 'IN-PROGRESS' && (
-              <Button
-                onClick={() => updateTaskStatus('COMPLETED')}
-                disabled={loading}
-                size="sm"
-                className="flex-1 bg-black hover:bg-gray-800 text-white"
-              >
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Complete
-              </Button>
-            )}
-            {task.status === 'COMPLETED' && (
-              <Button
-                onClick={() => updateTaskStatus('TO-DO')}
-                disabled={loading}
-                size="sm"
-                variant="outline"
-                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-100"
-              >
-                Reopen
-              </Button>
-            )}
-            <Button
-              onClick={deleteTask}
-              disabled={loading}
-              size="sm"
-              variant="destructive"
-              className="px-3 bg-gray-800 hover:bg-black text-white"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       </CardContent>
