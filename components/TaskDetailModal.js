@@ -250,17 +250,49 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
         )
       case 'image':
         return (
-          <div className="my-4">
+          <div className="my-4 group relative">
             {block.content ? (
-              <img src={block.content} alt="Block image" className="max-w-full rounded-lg" />
+              <div className="relative inline-block max-w-full">
+                <img 
+                  src={block.content} 
+                  alt="Block image" 
+                  className="max-w-full rounded-lg resize cursor-pointer"
+                  style={{ maxHeight: '500px', objectFit: 'contain' }}
+                  draggable={false}
+                />
+                {/* Delete button for image */}
+                <button
+                  onClick={() => deleteBlock(block.id)}
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Delete image"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             ) : (
-              <input
-                type="text"
-                placeholder="Paste image URL..."
-                className="w-full p-2 border border-gray-300 rounded-lg"
-                defaultValue={block.content}
-                onBlur={(e) => updateBlock(block.id, e.target.value)}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Paste image URL..."
+                  className="flex-1 p-2 border border-gray-300 rounded-lg"
+                  defaultValue={block.content}
+                  onBlur={(e) => updateBlock(block.id, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      updateBlock(block.id, e.target.value)
+                    }
+                  }}
+                />
+                {/* Cancel button for image input */}
+                <button
+                  onClick={() => deleteBlock(block.id)}
+                  className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
+                  title="Cancel image"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             )}
           </div>
         )
