@@ -1135,7 +1135,8 @@ async def create_deadline(
             "start_time": datetime.now(timezone.utc).isoformat(),
             "deadline_time": deadline_data.deadline_time,
             "status": "PENDING",
-            "priority": deadline_data.priority or "MEDIUM"
+            "priority": deadline_data.priority or "MEDIUM",
+            "markdown_content": deadline_data.markdown_content
         }
         
         # Insert into Supabase
