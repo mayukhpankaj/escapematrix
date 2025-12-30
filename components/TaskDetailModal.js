@@ -130,6 +130,11 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
   const handleKeyDown = (e, blockId) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      
+      // Save current block's content before creating new one
+      const currentContent = e.currentTarget.textContent
+      updateBlock(blockId, currentContent)
+      
       const currentIndex = blocks.findIndex(b => b.id === blockId)
       const newBlock = {
         id: Date.now(),
