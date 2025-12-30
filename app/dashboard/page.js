@@ -431,6 +431,7 @@ export default function DashboardPage() {
                       tasks['IN-PROGRESS'].map((task) => (
                         <div
                           key={task.id}
+                          data-task-id={task.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, task)}
                           onDragEnd={handleDragEnd}
@@ -470,6 +471,7 @@ export default function DashboardPage() {
                       tasks['COMPLETED'].map((task) => (
                         <div
                           key={task.id}
+                          data-task-id={task.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, task)}
                           onDragEnd={handleDragEnd}
