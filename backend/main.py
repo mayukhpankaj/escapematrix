@@ -168,26 +168,55 @@ async def create_task(
         Created task data
     """
     try:
-        # Prepare task data
-        task_data = {
-            "user_id": user_id,
-            "task_name": task.task_name,
-            "task_description": task.task_description,
-            "task_type": task.task_type,
-            "status": task.status,
-            "priority": task.priority,
-            "repetition_days": task.repetition_days,
-            "repetition_time": task.repetition_time,
-        }
+        # Determine which table to insert into based on task_type
+        if task.task_type == "LONG_TERM":
+            # Prepare long-term task data
+            task_data = {
+                "user_id": user_id,
+                "task_name": task.task_name,
+                "task_description": task.task_description,
+                "status": task.status,
+                "priority": task.priority,
+                "markdown_content": task.markdown_content,
+                "progress": 0
+            }
+            
+            # Insert into long_term_tasks table
+            response = supabase.table("long_term_tasks").insert(task_data).execute()
+            
+            if response.data:
+                result = response.data[0]
+                result["task_type"] = "LONG_TERM"
+                return result
+            else:
+                raise HTTPException(status_code=500, detail="Failed to create long-term task")
         
-        # Insert into Supabase
-        response = supabase.table("tasks").insert(task_data).execute()
-        
-        if response.data:
-            return response.data[0]
-        else:
-            raise HTTPException(status_code=500, detail="Failed to create task")
+        else:  # SHORT_TERM
+            # Prepare short-term task data
+            task_data = {
+                "user_id": user_id,
+                "task_name": task.task_name,
+                "task_description": task.task_description,
+                "status": task.status,
+                "priority": task.priority,
+                "repetition_days": task.repetition_days,
+                "repetition_time": task.repetition_time,
+                "parent_task_id": task.parent_task_id,
+                "markdown_content": task.markdown_content,
+            }
+            
+            # Insert into short_term_tasks table
+            response = supabase.table("short_term_tasks").insert(task_data).execute()
+            
+            if response.data:
+                result = response.data[0]
+                result["task_type"] = "SHORT_TERM"
+                return result
+            else:
+                raise HTTPException(status_code=500, detail="Failed to create short-term task")
     
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
@@ -206,8 +235,31 @@ async def get_tasks(
         Tasks grouped by status: {'TO-DO': [], 'IN-PROGRESS': [], 'COMPLETED': []}
     """
     try:
-        # Fetch all tasks for the user
-        response = supabase.table("tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+        # Fetch short-term tasks (for dashboard - these are the daily tasks)
+        short_term_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+        
+        short_term_tasks = short_term_response.data if short_term_response.data else []
+        
+        # Add task_type field to each task
+        for task in short_term_tasks:
+            task["task_type"] = "SHORT_TERM"
+        
+        # Group by status
+        grouped_tasks = {
+            'TO-DO': [],
+            'IN-PROGRESS': [],
+            'COMPLETED': []
+        }
+        
+        for task in short_term_tasks:
+            status = task.get('status', 'TO-DO')
+            if status in grouped_tasks:
+                grouped_tasks[status].append(task)
+        
+        return grouped_tasks
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching tasks: {str(e)}")
         
         tasks = response.data if response.data else []
         
