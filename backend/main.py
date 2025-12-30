@@ -285,6 +285,47 @@ async def update_task(
         raise HTTPException(status_code=500, detail=f"Error updating task: {str(e)}")
 
 
+@app.patch("/api/tasks/{task_id}")
+async def patch_task_status(
+    task_id: str,
+    status_update: dict,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Patch task status (for drag and drop)
+    
+    Args:
+        task_id: Task UUID
+        status_update: Dictionary with 'status' field
+        user_id: Authenticated user ID
+    
+    Returns:
+        Updated task data
+    """
+    try:
+        # Verify task belongs to user
+        existing_task = supabase.table("tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
+        
+        if not existing_task.data:
+            raise HTTPException(status_code=404, detail="Task not found or unauthorized")
+        
+        # Get new status
+        new_status = status_update.get("status")
+        if not new_status:
+            raise HTTPException(status_code=400, detail="Status field is required")
+        
+        # Update task status
+        response = supabase.table("tasks").update({"status": new_status}).eq("id", task_id).execute()
+        
+        if response.data:
+            return response.data[0]
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update task")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating task: {str(e)}")
+
 @app.delete("/api/tasks/{task_id}")
 async def delete_task(
     task_id: str,
