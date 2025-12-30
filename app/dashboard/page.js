@@ -9,6 +9,7 @@ import TaskCard from '@/components/TaskCard'
 import TaskFormModal from '@/components/TaskFormModal'
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
+import confetti from 'canvas-confetti'
 
 const API_BASE = '/backend-api/api'
 
