@@ -29,6 +29,10 @@ CREATE INDEX IF NOT EXISTS idx_habit_completions_date ON habit_completions(compl
 ALTER TABLE daily_habits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE habit_completions ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Enable all access for authenticated users" ON daily_habits;
+DROP POLICY IF EXISTS "Enable all access for authenticated users" ON habit_completions;
+
 -- Create RLS policies
-CREATE POLICY IF NOT EXISTS "Enable all access for authenticated users" ON daily_habits FOR ALL USING (true);
-CREATE POLICY IF NOT EXISTS "Enable all access for authenticated users" ON habit_completions FOR ALL USING (true);
+CREATE POLICY "Enable all access for authenticated users" ON daily_habits FOR ALL USING (true);
+CREATE POLICY "Enable all access for authenticated users" ON habit_completions FOR ALL USING (true);
