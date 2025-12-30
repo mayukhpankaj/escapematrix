@@ -305,7 +305,7 @@ def test_ai_chat_empty_messages():
         return False
 
 def test_ai_chat_message_response():
-    """Test AI chat endpoint for MESSAGE response"""
+    """Test AI chat endpoint for MESSAGE response with new format"""
     print("\n🔍 Testing AI chat endpoint for MESSAGE response...")
     
     # Create test JWT token
@@ -316,14 +316,14 @@ def test_ai_chat_message_response():
     }
     
     payload = {
-        "query": "Hello, how are you?"
+        "messages": [{"role": "user", "content": "Hello, how are you?"}]
     }
     
     try:
-        response = requests.post(f"{API_BASE_URL}/api/processquery", 
+        response = requests.post(f"{API_BASE_URL}/processquery", 
                                json=payload, 
                                headers=headers,
-                               timeout=30)
+                               timeout=70)
         
         print(f"   Status Code: {response.status_code}")
         
