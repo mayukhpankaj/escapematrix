@@ -85,6 +85,11 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
       localStorage.removeItem(localStorageKey)
       
       hasChanges.current = false
+      
+      // Refresh parent task list to get updated task
+      if (onUpdate) {
+        onUpdate()
+      }
     } catch (error) {
       console.error('Error saving content:', error)
     } finally {
