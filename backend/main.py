@@ -463,7 +463,7 @@ async def delete_task(
     user_id: str = Depends(verify_clerk_token)
 ):
     """
-    Delete a task
+    Delete a task (works for both long-term and short-term tasks)
     
     Args:
         task_id: Task UUID
@@ -473,16 +473,22 @@ async def delete_task(
         Success message
     """
     try:
-        # Verify task belongs to user
-        existing_task = supabase.table("tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
+        # Try to find and delete from short_term_tasks first
+        existing_task = supabase.table("short_term_tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
         
-        if not existing_task.data:
-            raise HTTPException(status_code=404, detail="Task not found or unauthorized")
+        if existing_task.data:
+            supabase.table("short_term_tasks").delete().eq("id", task_id).execute()
+            return {"message": "Short-term task deleted successfully", "task_id": task_id}
         
-        # Delete task
-        supabase.table("tasks").delete().eq("id", task_id).execute()
+        # Try long_term_tasks (this will also delete all children due to CASCADE)
+        existing_task = supabase.table("long_term_tasks").select("*").eq("id", task_id).eq("user_id", user_id).execute()
         
-        return {"message": "Task deleted successfully", "task_id": task_id}
+        if existing_task.data:
+            supabase.table("long_term_tasks").delete().eq("id", task_id).execute()
+            return {"message": "Long-term task deleted successfully (including all children)", "task_id": task_id}
+        
+        # Task not found in either table
+        raise HTTPException(status_code=404, detail="Task not found or unauthorized")
     
     except HTTPException:
         raise
