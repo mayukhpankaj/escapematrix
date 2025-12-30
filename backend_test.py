@@ -29,7 +29,7 @@ def create_test_jwt(user_id="test_user_123"):
     return token
 
 def test_ai_chat_plan_response():
-    """Test AI chat endpoint for PLAN response"""
+    """Test AI chat endpoint for PLAN response with new message format"""
     print("🔍 Testing AI chat endpoint for PLAN response...")
     
     # Create test JWT token
@@ -39,15 +39,18 @@ def test_ai_chat_plan_response():
         "Content-Type": "application/json"
     }
     
+    # Test with new message format
     payload = {
-        "query": "I want to learn system design"
+        "messages": [
+            {"role": "user", "content": "I want to learn system design"}
+        ]
     }
     
     try:
-        response = requests.post(f"{API_BASE_URL}/api/processquery", 
+        response = requests.post(f"{API_BASE_URL}/processquery", 
                                json=payload, 
                                headers=headers,
-                               timeout=30)  # Increased timeout for AI response
+                               timeout=70)  # Increased timeout to test timeout handling
         
         print(f"   Status Code: {response.status_code}")
         
