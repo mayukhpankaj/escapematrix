@@ -6,6 +6,7 @@ import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Menu, X, ListTodo, Target, Sparkles, Plus, Trash2, Phone, CalendarDays } from 'lucide-react'
+import Image from 'next/image'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
