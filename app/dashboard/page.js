@@ -122,19 +122,27 @@ export default function DashboardPage() {
     try {
       const token = await getToken()
       const response = await fetch(`${API_BASE}/tasks/${draggedTask.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ 
+          status: newStatus,
+          task_name: draggedTask.task_name,
+          task_description: draggedTask.task_description,
+          priority: draggedTask.priority,
+          repetition_days: draggedTask.repetition_days,
+          repetition_time: draggedTask.repetition_time
+        }),
       })
 
       if (response.ok) {
         // Refresh tasks after successful update
         await fetchTasks()
       } else {
-        console.error('Failed to update task status')
+        const errorData = await response.json()
+        console.error('Failed to update task status:', errorData)
       }
     } catch (error) {
       console.error('Error updating task:', error)
