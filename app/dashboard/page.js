@@ -171,7 +171,16 @@ export default function DashboardPage() {
     
     if (!draggedTask) return
     
-    const oldStatus = draggedTask.status
+    // Map deadline status to kanban column
+    const statusToColumn = {
+      'PENDING': 'TO-DO',
+      'IN-PROGRESS': 'IN-PROGRESS',
+      'OVERDUE': 'IN-PROGRESS',
+      'COMPLETED': 'COMPLETED',
+      'TO-DO': 'TO-DO'
+    }
+    
+    const oldStatus = statusToColumn[draggedTask.status] || draggedTask.status
     
     // Get the drop position
     const dropTarget = e.target
