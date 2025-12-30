@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Menu, X, ListTodo, Target, Sparkles, Plus, Trash2, Phone, CalendarDays } from 'lucide-react'
+import { Menu, X, ListTodo, Target, Sparkles, Plus, Trash2, Phone, CalendarDays, Smile } from 'lucide-react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -20,6 +21,9 @@ import {
   Filler
 } from 'chart.js'
 import useUserStore from '@/store/userStore'
+
+// Dynamically import emoji picker to avoid SSR issues
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
 // Register ChartJS components
 ChartJS.register(
