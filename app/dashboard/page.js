@@ -90,6 +90,56 @@ export default function DashboardPage() {
     fetchTasks()
   }
 
+  // Drag and Drop handlers
+  const handleDragStart = (e, task) => {
+    setDraggedTask(task)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = async (e, newStatus) => {
+    e.preventDefault()
+    
+    if (!draggedTask) return
+    
+    // Don't update if dropped in same column
+    if (draggedTask.status === newStatus) {
+      setDraggedTask(null)
+      return
+    }
+
+    try {
+      const token = await getToken()
+      const response = await fetch(`${API_BASE}/tasks/${draggedTask.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (response.ok) {
+        // Refresh tasks after successful update
+        await fetchTasks()
+      } else {
+        console.error('Failed to update task status')
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+    } finally {
+      setDraggedTask(null)
+    }
+  }
+
+  const handleDragEnd = () => {
+    setDraggedTask(null)
+  }
+
   if (!isLoaded || !isSignedIn) {
     return null
   }
