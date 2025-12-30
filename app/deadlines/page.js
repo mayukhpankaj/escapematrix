@@ -205,6 +205,28 @@ export default function DeadlinesPage() {
     })
   }
 
+  const getTimeRemaining = (deadlineTime) => {
+    const now = new Date()
+    const deadline = new Date(deadlineTime)
+    const diff = deadline - now
+    
+    if (diff <= 0) {
+      return { text: 'Overdue', isOverdue: true }
+    }
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (days > 0) {
+      return { text: `${days}d ${hours}h ${minutes}m`, isOverdue: false }
+    } else if (hours > 0) {
+      return { text: `${hours}h ${minutes}m`, isOverdue: false }
+    } else {
+      return { text: `${minutes}m`, isOverdue: false }
+    }
+  }
+
   if (!isLoaded || !isSignedIn) {
     return null
   }
