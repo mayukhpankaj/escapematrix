@@ -672,8 +672,8 @@ async def make_call(
         user_name = request_data.get("user_name", user_id)
         user_name = str(user_name)
         
-        # Get all tasks for the user
-        tasks_response = supabase.table("tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+        # Get all short-term tasks for the user (only these have daily repetition)
+        tasks_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
         
         all_tasks = tasks_response.data if tasks_response.data else []
         
