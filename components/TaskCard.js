@@ -28,11 +28,13 @@ const priorityLabels = {
   'NOTURGENT-NOTIMPORTANT': 'Low Priority',
 }
 
-export default function TaskCard({ task, onUpdate }) {
+export default function TaskCard({ task, onUpdate, onCardClick }) {
   const [loading, setLoading] = useState(false)
   const { getToken } = useAuth()
 
-  const deleteTask = async () => {
+  const deleteTask = async (e) => {
+    e.stopPropagation() // Prevent card click when clicking delete
+    
     if (!confirm('Are you sure you want to delete this task?')) return
     
     setLoading(true)
@@ -55,8 +57,17 @@ export default function TaskCard({ task, onUpdate }) {
     }
   }
 
+  const handleCardClick = () => {
+    if (onCardClick) {
+      onCardClick(task)
+    }
+  }
+
   return (
-    <Card className="hover:shadow-lg transition-shadow border border-gray-200">
+    <Card 
+      className="hover:shadow-lg transition-shadow border border-gray-200 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <CardContent className="p-4">
         <div className="space-y-3">
           {/* Task Title & Menu */}
@@ -77,6 +88,7 @@ export default function TaskCard({ task, onUpdate }) {
                 <DropdownMenuTrigger 
                   disabled={loading}
                   className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="w-5 h-5 text-gray-600" />
                 </DropdownMenuTrigger>
