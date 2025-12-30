@@ -81,7 +81,7 @@ def test_ai_chat_plan_response():
         return False
 
 def test_ai_chat_createtasks_response():
-    """Test AI chat endpoint for CREATETASKS response"""
+    """Test AI chat endpoint for CREATETASKS response with new message format"""
     print("\n🔍 Testing AI chat endpoint for CREATETASKS response...")
     
     # Create test JWT token
@@ -91,15 +91,20 @@ def test_ai_chat_createtasks_response():
         "Content-Type": "application/json"
     }
     
+    # Test with conversation history format
     payload = {
-        "query": "Yes, create those tasks for me to learn system design"
+        "messages": [
+            {"role": "user", "content": "I want to learn system design"},
+            {"role": "ai", "content": "I can help you create a learning plan for system design..."},
+            {"role": "user", "content": "Yes, create those tasks for me to learn system design"}
+        ]
     }
     
     try:
-        response = requests.post(f"{API_BASE_URL}/api/processquery", 
+        response = requests.post(f"{API_BASE_URL}/processquery", 
                                json=payload, 
                                headers=headers,
-                               timeout=30)  # Increased timeout for AI response
+                               timeout=70)  # Increased timeout to test timeout handling
         
         print(f"   Status Code: {response.status_code}")
         
