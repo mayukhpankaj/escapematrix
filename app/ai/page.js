@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Menu, X, ListTodo, Target, Sparkles, Send, Loader2, Phone, CalendarDays } from 'lucide-react'
+import { Menu, X, ListTodo, Target, Sparkles, Send, Loader2, Phone, CalendarDays, Zap } from 'lucide-react'
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
 
