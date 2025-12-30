@@ -136,6 +136,8 @@ export default function HabitsPage() {
 
     try {
       const token = await getToken()
+      const habitWithEmoji = `${selectedEmoji} ${newHabitName}`
+      
       const response = await fetch(`${API_BASE}/habits`, {
         method: 'POST',
         headers: {
@@ -143,13 +145,15 @@ export default function HabitsPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          habit_name: newHabitName,
+          habit_name: habitWithEmoji,
           color: HABIT_COLORS[habits.length % HABIT_COLORS.length].value
         })
       })
 
       if (response.ok) {
         setNewHabitName('')
+        setSelectedEmoji('✨')
+        setShowEmojiPicker(false)
         setShowAddHabit(false)
         await fetchData()
       }
