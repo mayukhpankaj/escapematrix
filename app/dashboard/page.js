@@ -49,14 +49,24 @@ export default function DashboardPage() {
   const fetchTasks = async () => {
     try {
       const token = await getToken()
-      const response = await fetch(`${API_BASE}/tasks`, {
+      
+      // Fetch regular tasks
+      const tasksResponse = await fetch(`${API_BASE}/tasks`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
 
-      if (response.ok) {
-        const data = await response.json()
+      // Fetch deadlines
+      const deadlinesResponse = await fetch(`${API_BASE}/deadlines`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (tasksResponse.ok && deadlinesResponse.ok) {
+        const tasksData = await tasksResponse.json()
+        const deadlinesData = await deadlinesResponse.json()
         
         // Filter to only show SHORT_TERM tasks
         const filteredTasks = {
@@ -66,9 +76,9 @@ export default function DashboardPage() {
         }
         
         // Process all tasks and filter SHORT_TERM only
-        Object.keys(data).forEach(status => {
-          if (data[status]) {
-            const shortTermTasks = data[status].filter(task => task.task_type === 'SHORT_TERM')
+        Object.keys(tasksData).forEach(status => {
+          if (tasksData[status]) {
+            const shortTermTasks = tasksData[status].filter(task => task.task_type === 'SHORT_TERM')
             
             // Map PENDING to IN-PROGRESS
             if (status === 'PENDING') {
@@ -78,6 +88,25 @@ export default function DashboardPage() {
             } else {
               filteredTasks[status] = shortTermTasks
             }
+          }
+        })
+        
+        // Add deadlines to kanban board
+        deadlinesData.forEach(deadline => {
+          // Mark deadline tasks with isDeadline flag
+          const deadlineTask = {
+            ...deadline,
+            isDeadline: true,
+            task_type: 'DEADLINE'
+          }
+          
+          // Map deadline status to kanban columns
+          if (deadline.status === 'PENDING') {
+            filteredTasks['TO-DO'].push(deadlineTask)
+          } else if (deadline.status === 'IN-PROGRESS' || deadline.status === 'OVERDUE') {
+            filteredTasks['IN-PROGRESS'].push(deadlineTask)
+          } else if (deadline.status === 'COMPLETED') {
+            filteredTasks['COMPLETED'].push(deadlineTask)
           }
         })
         
