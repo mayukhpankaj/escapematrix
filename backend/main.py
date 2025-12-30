@@ -437,6 +437,64 @@ async def patch_task_status(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating task: {str(e)}")
+
+
+@app.post("/api/tasks/reorder")
+async def reorder_tasks(
+    reorder_data: dict,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Reorder tasks within a column
+    
+    Args:
+        reorder_data: {
+            "task_id": "uuid",
+            "new_status": "TO-DO",
+            "new_order": 2,
+            "task_type": "SHORT_TERM"
+        }
+        user_id: Authenticated user ID
+    
+    Returns:
+        Success message
+    """
+    try:
+        task_id = reorder_data.get("task_id")
+        new_status = reorder_data.get("new_status")
+        new_order = reorder_data.get("new_order")
+        task_type = reorder_data.get("task_type", "SHORT_TERM")
+        
+        if not task_id or not new_status or new_order is None:
+            raise HTTPException(status_code=400, detail="task_id, new_status, and new_order are required")
+        
+        table_name = "short_term_tasks" if task_type == "SHORT_TERM" else "long_term_tasks"
+        
+        # Get all tasks in the target column
+        tasks_response = supabase.table(table_name).select("id, display_order, status").eq("user_id", user_id).eq("status", new_status).order("display_order").execute()
+        
+        tasks = tasks_response.data if tasks_response.data else []
+        
+        # Find the dragged task
+        dragged_task = next((t for t in tasks if t["id"] == task_id), None)
+        old_order = dragged_task["display_order"] if dragged_task else None
+        
+        # Remove dragged task from list
+        tasks = [t for t in tasks if t["id"] != task_id]
+        
+        # Insert at new position
+        tasks.insert(new_order, {"id": task_id, "display_order": new_order, "status": new_status})
+        
+        # Update display_order for all affected tasks
+        for idx, task in enumerate(tasks):
+            supabase.table(table_name).update({"display_order": idx, "status": new_status}).eq("id", task["id"]).execute()
+        
+        return {"message": "Tasks reordered successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reordering tasks: {str(e)}")
         
         if not existing_task.data:
             raise HTTPException(status_code=404, detail="Task not found or unauthorized")
