@@ -1052,6 +1052,189 @@ async def toggle_habit_completion(
         raise HTTPException(status_code=500, detail=f"Error toggling completion: {str(e)}")
 
 
+# ============= DEADLINES ENDPOINTS =============
+
+class DeadlineCreate(BaseModel):
+    """Model for creating a new deadline"""
+    task_name: str = Field(..., min_length=1, max_length=200)
+    task_description: Optional[str] = None
+    deadline_time: str = Field(..., description="ISO format datetime string")
+    priority: Optional[str] = "MEDIUM"
+
+
+class DeadlineUpdate(BaseModel):
+    """Model for updating a deadline"""
+    task_name: Optional[str] = None
+    task_description: Optional[str] = None
+    deadline_time: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+
+
+@app.get("/api/deadlines")
+async def get_deadlines(user_id: str = Depends(verify_clerk_token)):
+    """
+    Get all deadlines for the authenticated user
+    
+    Args:
+        user_id: Authenticated user ID
+    
+    Returns:
+        List of deadlines sorted by deadline_time
+    """
+    try:
+        # Get all deadlines for the user
+        response = supabase.table("deadlines").select("*").eq("user_id", user_id).order("deadline_time", desc=False).execute()
+        
+        deadlines = response.data if response.data else []
+        
+        # Update overdue status
+        from datetime import datetime, timezone
+        current_time = datetime.now(timezone.utc)
+        
+        for deadline in deadlines:
+            if deadline['status'] not in ['COMPLETED', 'OVERDUE']:
+                deadline_time = datetime.fromisoformat(deadline['deadline_time'].replace('Z', '+00:00'))
+                if deadline_time < current_time:
+                    # Update status to OVERDUE
+                    supabase.table("deadlines").update({"status": "OVERDUE"}).eq("id", deadline['id']).execute()
+                    deadline['status'] = 'OVERDUE'
+        
+        return deadlines
+    
+    except Exception as e:
+        logger.error(f"Error fetching deadlines for user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching deadlines: {str(e)}")
+
+
+@app.post("/api/deadlines")
+async def create_deadline(
+    deadline_data: DeadlineCreate,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Create a new deadline
+    
+    Args:
+        deadline_data: Deadline information
+        user_id: Authenticated user ID
+    
+    Returns:
+        Created deadline data
+    """
+    try:
+        from datetime import datetime, timezone
+        
+        # Prepare deadline data
+        new_deadline = {
+            "user_id": user_id,
+            "task_name": deadline_data.task_name,
+            "task_description": deadline_data.task_description,
+            "start_time": datetime.now(timezone.utc).isoformat(),
+            "deadline_time": deadline_data.deadline_time,
+            "status": "PENDING",
+            "priority": deadline_data.priority or "MEDIUM"
+        }
+        
+        # Insert into Supabase
+        response = supabase.table("deadlines").insert(new_deadline).execute()
+        
+        if response.data:
+            logger.info(f"Created deadline for user {user_id}: {deadline_data.task_name}")
+            return response.data[0]
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create deadline")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating deadline for user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating deadline: {str(e)}")
+
+
+@app.patch("/api/deadlines/{deadline_id}")
+async def update_deadline(
+    deadline_id: str,
+    deadline_data: DeadlineUpdate,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Update a deadline
+    
+    Args:
+        deadline_id: Deadline UUID
+        deadline_data: Updated deadline information
+        user_id: Authenticated user ID
+    
+    Returns:
+        Updated deadline data
+    """
+    try:
+        from datetime import datetime, timezone
+        
+        # Prepare update data
+        update_data = {
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        if deadline_data.task_name:
+            update_data["task_name"] = deadline_data.task_name
+        if deadline_data.task_description is not None:
+            update_data["task_description"] = deadline_data.task_description
+        if deadline_data.deadline_time:
+            update_data["deadline_time"] = deadline_data.deadline_time
+        if deadline_data.status:
+            update_data["status"] = deadline_data.status
+        if deadline_data.priority:
+            update_data["priority"] = deadline_data.priority
+        
+        # Update in Supabase
+        response = supabase.table("deadlines").update(update_data).eq("id", deadline_id).eq("user_id", user_id).execute()
+        
+        if response.data:
+            return response.data[0]
+        else:
+            raise HTTPException(status_code=404, detail="Deadline not found or unauthorized")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating deadline {deadline_id} for user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating deadline: {str(e)}")
+
+
+@app.delete("/api/deadlines/{deadline_id}")
+async def delete_deadline(
+    deadline_id: str,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Delete a deadline
+    
+    Args:
+        deadline_id: Deadline UUID
+        user_id: Authenticated user ID
+    
+    Returns:
+        Success message
+    """
+    try:
+        # Verify ownership and delete
+        response = supabase.table("deadlines").delete().eq("id", deadline_id).eq("user_id", user_id).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Deadline not found or unauthorized")
+        
+        logger.info(f"Deleted deadline {deadline_id} for user {user_id}")
+        return {"success": True, "message": "Deadline deleted successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting deadline {deadline_id} for user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting deadline: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
