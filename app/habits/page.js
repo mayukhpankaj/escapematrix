@@ -471,14 +471,26 @@ export default function HabitsPage() {
                 <Menu className="w-6 h-6" />
               </button>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Daily Habit Tracker</h2>
-                <p className="text-sm text-gray-500">{monthName}</p>
+                <h2 className="text-2xl font-bold text-gray-800">{monthName}</h2>
               </div>
             </div>
-            <Button onClick={() => setShowAddHabit(true)} className="bg-black hover:bg-gray-800 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Habit
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={() => {
+                  setShowPastData(true)
+                  fetchPastMonths()
+                }} 
+                variant="outline"
+                className="border-gray-300 hover:bg-gray-50"
+              >
+                <CalendarDays className="w-4 h-4 mr-2" />
+                Past Data
+              </Button>
+              <Button onClick={() => setShowAddHabit(true)} className="bg-black hover:bg-gray-800 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Habit
+              </Button>
+            </div>
           </div>
         </header>
 
