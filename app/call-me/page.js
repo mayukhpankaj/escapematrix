@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
-import { Menu, X, ListTodo, Target, Sparkles, Phone, Loader2 } from 'lucide-react'
+import { Menu, X, ListTodo, Target, Sparkles, Phone, Loader2, CalendarDays } from 'lucide-react'
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
 
