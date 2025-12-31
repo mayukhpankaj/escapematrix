@@ -1,0 +1,146 @@
+{
+  "avatars": {
+    "celebration": {
+      "image": "/avatar/1.png",
+      "name": "Celebration Avatar",
+      "messages": {
+        "habit_completion": [
+          "Amazing work! You completed a habit! 🎉",
+          "Keep that streak going! 🔥",
+          "You're on fire! Another habit down! 💪",
+          "Consistency is your superpower! ⭐",
+          "Boom! Habit completed! 🚀"
+        ],
+        "task_completion": [
+          "Task completed! You're crushing it! 🎯",
+          "Another task bites the dust! ✅",
+          "Productivity level: Expert! 🏆",
+          "Great job finishing that task! 👏",
+          "Task master! Well done! 🌟"
+        ],
+        "milestone": [
+          "Milestone reached! Incredible progress! 🎊",
+          "You're leveling up! 📈",
+          "Achievement unlocked! 🏅",
+          "Major progress! Keep it up! 💯",
+          "You're on a roll! 🎪"
+        ]
+      }
+    },
+    "encouragement": {
+      "image": "/avatar/2.png",
+      "name": "Encouragement Avatar",
+      "messages": {
+        "habit_completion": [
+          "Great job! Every small step counts! 👣",
+          "You're building amazing habits! 🌱",
+          "Progress is progress! Keep going! 📈",
+          "You've got this! 💖",
+          "Another step in the right direction! 🎯"
+        ],
+        "task_completion": [
+          "Nice work! Task completed! ✨",
+          "You're doing amazing! 🌟",
+          "Keep up the great work! 🎈",
+          "Productivity looks good on you! 😊",
+          "Task done! Time to celebrate! 🎉"
+        ],
+        "milestone": [
+          "Wonderful milestone! 🌈",
+          "You're making real progress! 📊",
+          "So proud of your progress! 🥰",
+          "Milestone achieved! 🎖️",
+          "You're on the path to success! 🛤️"
+        ]
+      }
+    },
+    "wisdom": {
+      "image": "/avatar/3.png",
+      "name": "Wisdom Avatar",
+      "messages": {
+        "habit_completion": [
+          "A journey of a thousand miles begins with a single step. 🏃‍♂️",
+          "Excellence is not a single act, but a habit. 📚",
+          "Success is the sum of small efforts. 🧩",
+          "The secret of getting ahead is getting started. 🚀",
+          "Motivation is what gets you started. Habit is what keeps you going. 🔋"
+        ],
+        "task_completion": [
+          "The way to get started is to quit talking and begin doing. 🎬",
+          "Focus on being productive instead of busy. 🎯",
+          "Success is the progressive realization of worthy goals. 📈",
+          "Your limitation—it's only your imagination. 💭",
+          "Great things never come from comfort zones. 🌟"
+        ],
+        "milestone": [
+          "The expert in anything was once a beginner. 🌱",
+          "Progress is impossible without change. 🔄",
+          "Don't watch the clock; do what it does. Keep going. ⏰",
+          "The future depends on what you do today. 📅",
+          "Success doesn't just find you. You have to go out and get it. 🔍"
+        ]
+      }
+    },
+    "fun": {
+      "image": "/avatar/1.png",
+      "name": "Fun Avatar",
+      "messages": {
+        "habit_completion": [
+          "Habit crushed! You're a habit-crushing machine! 🤖",
+          "Boom! Another habit in the bag! 🎒",
+          "You're on fire! 🔥🔥🔥",
+          "Habit level: COMPLETED! 🎮",
+          "You're basically a superhero now! 🦸‍♀️"
+        ],
+        "task_completion": [
+          "Task defeated! You win! 🏆",
+          "Task bouncer! No task can stop you! 💪",
+          "You're the task master! 👑",
+          "Task completed! Dance break! 🕺",
+          "You're unstoppable! 🚀"
+        ],
+        "milestone": [
+          "Milestone unlocked! +100 XP! 🎮",
+          "Level up! You're now a productivity wizard! 🧙‍♂️",
+          "Achievement get! 🏅",
+          "You're on the leaderboard! 📊",
+          "Boss level reached! 🐉"
+        ]
+      }
+    },
+    "calm": {
+      "image": "/avatar/2.png",
+      "name": "Calm Avatar",
+      "messages": {
+        "habit_completion": [
+          "Peaceful progress. Beautiful journey. 🌸",
+          "Mindful completion. Inner growth. 🧘‍♀️",
+          "Gentle steps lead to great change. 🍃",
+          "Breathe. You're doing wonderfully. 🌬️",
+          "Calm consistency. Beautiful results. 🌊"
+        ],
+        "task_completion": [
+          "Task completed with grace. ✨",
+          "Peaceful productivity. Beautiful balance. ⚖️",
+          "Flow state achieved. 🌊",
+          "Mindful completion. Inner peace. 🧘‍♂️",
+          "Gentle progress. Lasting impact. 🌿"
+        ],
+        "milestone": [
+          "Beautiful milestone. Peaceful journey. 🌅",
+          "Harmony in progress. Balance in life. 🎭",
+          "Serene achievement. Calm success. 🕊️",
+          "Mindful milestone. Meaningful progress. 🌺",
+          "Tranquil triumph. Beautiful balance. 🏔️"
+        ]
+      }
+    }
+  },
+  "settings": {
+    "autoHideDelay": 4000,
+    "typewriterSpeed": 25,
+    "showOnCompletion": true,
+    "randomizeAvatar": false,
+    "completionAvatar": "celebration"
+  }
+}

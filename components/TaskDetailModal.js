@@ -2,65 +2,98 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { X, MoreVertical, Trash2, Type, List, ListOrdered, Image as ImageIcon, Link2, Bold, Italic, Code } from 'lucide-react'
+import { X, MoreVertical, Trash2 } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
+import { MDXEditor, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, markdownShortcutPlugin, linkPlugin, linkDialogPlugin, imagePlugin, tablePlugin, toolbarPlugin, UndoRedo, BoldItalicUnderlineToggles, ListsToggle, BlockTypeSelect, CreateLink, InsertTable, InsertThematicBreak } from '@mdxeditor/editor'
+import '@mdxeditor/editor/style.css'
+
+// Try importing BlockTypeSelect separately
+// import { BlockTypeSelect } from '@mdxeditor/editor/ui/BlockTypeSelect'
 
 const API_BASE = '/backend-api/api'
 
 export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete }) {
-  const [blocks, setBlocks] = useState([{ id: 1, type: 'paragraph', content: '' }])
+  const [markdown, setMarkdown] = useState('')
   const [saving, setSaving] = useState(false)
+  const [blockTypeDropdownOpen, setBlockTypeDropdownOpen] = useState(false)
   const { getToken } = useAuth()
   const hasChanges = useRef(false)
+  const editorRef = useRef(null)
 
-  // Load content when modal opens
   useEffect(() => {
     if (isOpen && task) {
+      // Add class to body when modal opens
+      document.body.classList.add('modal-open')
+      
       // Try to load from localStorage first (for unsaved changes)
       const localStorageKey = `task-${task.id}-content`
       const savedContent = localStorage.getItem(localStorageKey)
       
       if (savedContent) {
-        try {
-          const parsed = JSON.parse(savedContent)
-          setBlocks(parsed)
-        } catch {
-          loadFromDatabase()
-        }
+        setMarkdown(savedContent)
       } else {
         loadFromDatabase()
       }
       
       hasChanges.current = false
     }
+    
+    return () => {
+      // Remove class from body when modal closes
+      document.body.classList.remove('modal-open')
+    }
   }, [isOpen, task])
 
   const loadFromDatabase = () => {
     if (task.markdown_content) {
       try {
+        // If it's JSON (old format), extract plain text
         const parsed = JSON.parse(task.markdown_content)
-        setBlocks(parsed)
+        if (Array.isArray(parsed)) {
+          // Convert old block format to markdown
+          const markdownText = parsed.map(block => {
+            switch (block.type) {
+              case 'heading1':
+                return `# ${block.content}`
+              case 'heading2':
+                return `## ${block.content}`
+              case 'heading3':
+                return `### ${block.content}`
+              case 'bullet':
+                return `- ${block.content}`
+              case 'numbered':
+                return `1. ${block.content}`
+              case 'image':
+                return block.content ? `![image](${block.content})` : ''
+              default:
+                return block.content
+            }
+          }).join('\n\n')
+          setMarkdown(markdownText)
+        } else {
+          setMarkdown(task.markdown_content)
+        }
       } catch {
-        setBlocks([{ id: 1, type: 'paragraph', content: task.markdown_content }])
+        // If it's not JSON, treat it as plain markdown
+        setMarkdown(task.markdown_content)
       }
     } else {
-      setBlocks([{ id: 1, type: 'paragraph', content: '' }])
+      setMarkdown('')
     }
   }
 
-  // Save to localStorage whenever blocks change
+  // Save to localStorage whenever markdown changes
   useEffect(() => {
     if (isOpen && task && hasChanges.current) {
       const localStorageKey = `task-${task.id}-content`
-      localStorage.setItem(localStorageKey, JSON.stringify(blocks))
+      localStorage.setItem(localStorageKey, markdown)
     }
-  }, [blocks, isOpen, task])
+  }, [markdown, isOpen, task])
 
   const saveToBackend = async () => {
     if (!task) return
@@ -69,17 +102,34 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
       setSaving(true)
       const token = await getToken()
       
-      await fetch(`${API_BASE}/tasks/${task.id}`, {
+      console.log('Saving to backend:', {
+        taskId: task.id,
+        markdownLength: markdown.length,
+        hasChanges: hasChanges.current,
+        token: token ? 'present' : 'missing'
+      })
+      
+      const response = await fetch(`${API_BASE}/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          markdown_content: JSON.stringify(blocks)
+          markdown_content: markdown
         }),
       })
 
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Save failed with status:', response.status)
+        console.error('Error response:', errorText)
+        throw new Error(`Failed to save: ${response.status} - ${errorText}`)
+      }
+
+      const responseData = await response.json()
+      console.log('Save successful:', responseData)
+      
       // Clear localStorage after successful save
       const localStorageKey = `task-${task.id}-content`
       localStorage.removeItem(localStorageKey)
@@ -97,211 +147,96 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
     }
   }
 
+  const handleMarkdownChange = (value) => {
+    setMarkdown(value)
+    hasChanges.current = true
+  }
+
   const handleClose = async () => {
-    // Save to backend before closing
-    await saveToBackend()
+    if (hasChanges.current) {
+      await saveToBackend()
+    }
     onClose()
   }
 
-  const addBlock = (type = 'paragraph') => {
-    const newBlock = {
-      id: Date.now(),
-      type,
-      content: ''
-    }
-    setBlocks([...blocks, newBlock])
-    hasChanges.current = true
-  }
-
-  const updateBlock = (id, content) => {
-    setBlocks(blocks.map(block => 
-      block.id === id ? { ...block, content } : block
-    ))
-    hasChanges.current = true
-  }
-
-  const handleBlur = (e, blockId) => {
-    // Update content when user stops editing
-    updateBlock(blockId, e.currentTarget.textContent)
-  }
-
-  const deleteBlock = (id) => {
-    if (blocks.length > 1) {
-      setBlocks(blocks.filter(block => block.id !== id))
-      hasChanges.current = true
-    }
-  }
-
-  const handleKeyDown = (e, blockId) => {
-    // Allow Ctrl+A to select all
-    if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
-      return // Let default behavior work
-    }
+  // Custom block type formatting functions
+  const applyBlockType = (blockType) => {
+    console.log('Applying block type:', blockType)
     
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      
-      // Save current content and create new block in single state update
-      const currentContent = e.currentTarget.textContent
-      
-      setBlocks(prevBlocks => {
-        const currentIndex = prevBlocks.findIndex(b => b.id === blockId)
-        
-        // Create new blocks array with updated content and new block
-        const newBlocks = prevBlocks.map(block => 
-          block.id === blockId ? { ...block, content: currentContent } : block
-        )
-        
-        const newBlock = {
-          id: Date.now(),
-          type: 'paragraph',
-          content: ''
-        }
-        
-        newBlocks.splice(currentIndex + 1, 0, newBlock)
-        return newBlocks
-      })
-      
-      hasChanges.current = true
-      
-      // Focus the new block
-      setTimeout(() => {
-        const newElement = document.querySelector(`[data-block-id="${Date.now()}"]`)
-        if (newElement) {
-          newElement.focus()
-        } else {
-          // Fallback: focus the next block after current
-          const allBlocks = document.querySelectorAll('[data-block-id]')
-          const currentEl = document.querySelector(`[data-block-id="${blockId}"]`)
-          if (currentEl) {
-            const currentIdx = Array.from(allBlocks).indexOf(currentEl)
-            if (allBlocks[currentIdx + 1]) {
-              allBlocks[currentIdx + 1].focus()
-            }
-          }
-        }
-      }, 0)
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      // Move to previous block
-      const allBlocks = document.querySelectorAll('[data-block-id]')
-      const currentEl = document.querySelector(`[data-block-id="${blockId}"]`)
-      if (currentEl) {
-        const currentIdx = Array.from(allBlocks).indexOf(currentEl)
-        if (currentIdx > 0 && allBlocks[currentIdx - 1]) {
-          allBlocks[currentIdx - 1].focus()
-        }
-      }
-    } else if (e.key === 'Backspace' && e.target.textContent === '') {
-      e.preventDefault()
-      if (blocks.length > 1) {
-        // Focus previous block before deleting
-        const allBlocks = document.querySelectorAll('[data-block-id]')
-        const currentEl = document.querySelector(`[data-block-id="${blockId}"]`)
-        if (currentEl) {
-          const currentIdx = Array.from(allBlocks).indexOf(currentEl)
-          if (currentIdx > 0 && allBlocks[currentIdx - 1]) {
-            allBlocks[currentIdx - 1].focus()
-          }
-        }
-        deleteBlock(blockId)
-      }
-    }
-  }
-
-  const renderBlock = (block, index) => {
-    const commonProps = {
-      key: block.id,
-      'data-block-id': block.id,
-      contentEditable: true,
-      suppressContentEditableWarning: true,
-      onBlur: (e) => handleBlur(e, block.id),
-      onKeyDown: (e) => handleKeyDown(e, block.id),
-      className: "outline-none focus:outline-none min-h-[1.5rem] px-1 py-0.5",
-      dangerouslySetInnerHTML: { __html: block.content }
-    }
-
-    switch (block.type) {
+    let formattedText = ''
+    switch (blockType) {
+      case 'paragraph':
+        formattedText = ''
+        break
       case 'heading1':
-        return (
-          <h1 {...commonProps} className={`${commonProps.className} text-3xl font-bold mb-2`} />
-        )
+        formattedText = '# '
+        break
       case 'heading2':
-        return (
-          <h2 {...commonProps} className={`${commonProps.className} text-2xl font-semibold mb-2`} />
-        )
+        formattedText = '## '
+        break
       case 'heading3':
-        return (
-          <h3 {...commonProps} className={`${commonProps.className} text-xl font-medium mb-1`} />
-        )
+        formattedText = '### '
+        break
+      case 'heading4':
+        formattedText = '#### '
+        break
+      case 'heading5':
+        formattedText = '##### '
+        break
+      case 'heading6':
+        formattedText = '###### '
+        break
+      case 'quote':
+        formattedText = '> '
+        break
       case 'bullet':
-        return (
-          <div className="flex items-start gap-2 mb-1">
-            <span className="mt-2">•</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1`} />
-          </div>
-        )
+        formattedText = '- '
+        break
       case 'numbered':
-        return (
-          <div className="flex items-start gap-2 mb-1">
-            <span className="mt-2">{index + 1}.</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1`} />
-          </div>
-        )
-      case 'image':
-        return (
-          <div className="my-4 group relative">
-            {block.content ? (
-              <div className="relative inline-block max-w-full">
-                <img 
-                  src={block.content} 
-                  alt="Block image" 
-                  className="max-w-full rounded-lg resize cursor-pointer"
-                  style={{ maxHeight: '500px', objectFit: 'contain' }}
-                  draggable={false}
-                />
-                {/* Delete button for image */}
-                <button
-                  onClick={() => deleteBlock(block.id)}
-                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Delete image"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Paste image URL..."
-                  className="flex-1 p-2 border border-gray-300 rounded-lg"
-                  defaultValue={block.content}
-                  onBlur={(e) => updateBlock(block.id, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      updateBlock(block.id, e.target.value)
-                    }
-                  }}
-                />
-                {/* Cancel button for image input */}
-                <button
-                  onClick={() => deleteBlock(block.id)}
-                  className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
-                  title="Cancel image"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-          </div>
-        )
+        formattedText = '1. '
+        break
       default:
-        return (
-          <p {...commonProps} />
-        )
+        formattedText = ''
     }
+
+    // Simply append the formatting to the current markdown
+    const newMarkdown = markdown ? `${markdown}\n${formattedText}` : formattedText
+    
+    console.log('New markdown:', newMarkdown)
+    
+    // Update markdown state
+    setMarkdown(newMarkdown)
+    hasChanges.current = true
+    
+    setBlockTypeDropdownOpen(false)
   }
+
+  const blockTypes = [
+    { value: 'paragraph', label: 'Paragraph' },
+    { value: 'heading1', label: 'Heading 1' },
+    { value: 'heading2', label: 'Heading 2' },
+    { value: 'heading3', label: 'Heading 3' },
+    { value: 'heading4', label: 'Heading 4' },
+    { value: 'heading5', label: 'Heading 5' },
+    { value: 'heading6', label: 'Heading 6' },
+    { value: 'quote', label: 'Quote' },
+    { value: 'bullet', label: 'Bullet List' },
+    { value: 'numbered', label: 'Numbered List' }
+  ]
+
+  // Debug function to check BlockTypeSelect
+  useEffect(() => {
+    if (isOpen) {
+      console.log('TaskDetailModal opened, checking BlockTypeSelect...')
+      setTimeout(() => {
+        const blockTypeSelect = document.querySelector('.blocktype-select')
+        console.log('BlockTypeSelect element found:', blockTypeSelect)
+        if (blockTypeSelect) {
+          console.log('BlockTypeSelect styles:', window.getComputedStyle(blockTypeSelect))
+        }
+      }, 1000)
+    }
+  }, [isOpen])
 
   if (!isOpen || !task) return null
 
@@ -350,71 +285,61 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
           </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex items-center gap-1 p-2 border-b border-gray-200 overflow-x-auto">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => addBlock('heading1')}
-            title="Heading 1"
-          >
-            <Type className="w-4 h-4 mr-1" />
-            H1
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => addBlock('heading2')}
-            title="Heading 2"
-          >
-            <Type className="w-4 h-4 mr-1" />
-            H2
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => addBlock('heading3')}
-            title="Heading 3"
-          >
-            <Type className="w-4 h-4 mr-1" />
-            H3
-          </Button>
-          <div className="w-px h-6 bg-gray-300 mx-1" />
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => addBlock('bullet')}
-            title="Bullet List"
-          >
-            <List className="w-4 h-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => addBlock('numbered')}
-            title="Numbered List"
-          >
-            <ListOrdered className="w-4 h-4" />
-          </Button>
-          <div className="w-px h-6 bg-gray-300 mx-1" />
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => addBlock('image')}
-            title="Image"
-          >
-            <ImageIcon className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Content Editor */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-3xl mx-auto space-y-2">
-            {blocks.map((block, index) => (
-              <div key={block.id} className="group relative">
-                {renderBlock(block, index)}
-              </div>
-            ))}
+        {/* MDX Editor */}
+        <div className="flex-1 overflow-hidden">
+          <div className="mdx-editor h-full">
+            <MDXEditor 
+              ref={editorRef}
+              markdown={markdown}
+              onChange={handleMarkdownChange}
+              plugins={[
+                headingsPlugin({ 
+                  allowedHeadingLevels: [1, 2, 3, 4, 5, 6] 
+                }),
+                listsPlugin(),
+                quotePlugin(),
+                thematicBreakPlugin(),
+                markdownShortcutPlugin(),
+                linkPlugin(),
+                linkDialogPlugin(),
+                imagePlugin(),
+                tablePlugin(),
+                toolbarPlugin({
+                  toolbarContents: () => (
+                    <>
+                      <UndoRedo />
+                      <DropdownMenu open={blockTypeDropdownOpen} onOpenChange={setBlockTypeDropdownOpen}>
+                        <DropdownMenuTrigger asChild>
+                          <button className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded border border-gray-300">
+                            Block Type
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {blockTypes.map((type) => (
+                            <DropdownMenuItem
+                              key={type.value}
+                              onClick={() => applyBlockType(type.value)}
+                            >
+                              {type.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <BoldItalicUnderlineToggles />
+                      <ListsToggle />
+                      <CreateLink />
+                      <InsertTable />
+                      <InsertThematicBreak />
+                    </>
+                  ),
+                  toolbarPluginOptions: {
+                    shouldToolbarPersist: false,
+                  }
+                }),
+              ]}
+              contentEditableClassName="prose prose-lg max-w-none min-h-[200px] p-4"
+              className="h-full"
+            />
           </div>
         </div>
       </div>

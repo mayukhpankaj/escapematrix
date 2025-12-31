@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Menu, X, ListTodo, Target, Sparkles, Plus, Trash2, Phone, CalendarDays, Smile, Zap } from 'lucide-react'
+import { Progress, TrendingUp, ListTodo, Target, Sparkles, Plus, Trash2, Phone, CalendarDays, Smile, Zap, Menu } from 'lucide-react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { Line } from 'react-chartjs-2'
+import confetti from 'canvas-confetti'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -21,6 +22,9 @@ import {
   Filler
 } from 'chart.js'
 import useUserStore from '@/store/userStore'
+import { preloadHomeData } from '@/utils/dataPreloader'
+import AvatarGuide from '@/components/AvatarGuide'
+import avatarManager from '@/utils/avatarManager'
 
 // Dynamically import emoji picker to avoid SSR issues
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
@@ -62,13 +66,16 @@ export default function HabitsPage() {
   const [loadingPastData, setLoadingPastData] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showGuide, setShowGuide] = useState(true)
+  const [completionAvatar, setCompletionAvatar] = useState(null)
   const currentDayRef = useRef(null)
   const scrollContainerRef = useRef(null)
   
   const router = useRouter()
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
-  const { setUser } = useUserStore()
+  const { setUser, fullName } = useUserStore()
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -106,6 +113,53 @@ export default function HabitsPage() {
       }, 100)
     }
   }, [loading, habits])
+
+  // Preload home data in background after habits data loads
+  useEffect(() => {
+    if (!loading && isSignedIn) {
+      // Delay a bit to ensure habits page is fully loaded first
+      const timer = setTimeout(() => {
+        preloadHomeData(getToken).catch(console.error)
+      }, 2000) // 2 second delay
+
+      return () => clearTimeout(timer)
+    }
+  }, [loading, isSignedIn, getToken])
+
+  // Test avatar manager
+  useEffect(() => {
+    console.log('Testing avatar manager:', {
+      pageMessages: avatarManager.getPageMessages('habits'),
+      pageAvatar: avatarManager.getPageAvatar('habits'),
+      pageAvatarName: avatarManager.getPageAvatarName('habits'),
+      settings: avatarManager.getSettings()
+    })
+  }, [loading])
+
+  // Handle avatar completion events
+  useEffect(() => {
+    const handleCompletion = (eventData) => {
+      console.log('Avatar completion event triggered:', eventData)
+      setCompletionAvatar({
+        messages: [eventData.message],
+        avatarImage: eventData.avatarImage,
+        avatarName: eventData.avatarName,
+        autoHideDelay: eventData.autoHideDelay,
+        typewriterSpeed: eventData.typewriterSpeed
+      })
+
+      // Hide completion avatar after delay
+      setTimeout(() => {
+        setCompletionAvatar(null)
+      }, eventData.autoHideDelay + 2000)
+    }
+
+    avatarManager.onCompletion(handleCompletion)
+
+    return () => {
+      avatarManager.offCompletion(handleCompletion)
+    }
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -180,7 +234,7 @@ export default function HabitsPage() {
     }
   }
 
-  const toggleCompletion = async (habitId, date) => {
+  const toggleCompletion = async (habitId, date, wasCompleted) => {
     try {
       const token = await getToken()
       const response = await fetch(`${API_BASE}/habits/completions`, {
@@ -197,6 +251,20 @@ export default function HabitsPage() {
 
       if (response.ok) {
         const result = await response.json()
+
+        if (!wasCompleted && result.completed) {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          })
+          
+          // Trigger avatar celebration
+          const habit = habits.find(h => h.id === habitId)
+          if (habit) {
+            avatarManager.triggerHabitCompletion(habit.habit_name)
+          }
+        }
         
         // Update completions state
         if (result.completed) {
@@ -325,7 +393,7 @@ export default function HabitsPage() {
     labels: Array.from({ length: getDaysInMonth() }, (_, i) => i + 1),
     datasets: [
       {
-        label: 'Completion %',
+        label: 'Completion',
         data: getCompletionScores(),
         borderColor: 'rgb(139, 92, 246)',
         backgroundColor: 'rgba(139, 92, 246, 0.1)',
@@ -344,6 +412,13 @@ export default function HabitsPage() {
       legend: {
         display: false
       },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return context.parsed.y
+          }
+        }
+      },
       title: {
         display: true,
         text: 'Daily Progress',
@@ -353,14 +428,22 @@ export default function HabitsPage() {
         }
       }
     },
+    layout: {
+      padding: {
+        top: 20,
+        bottom: 10
+      }
+    },
     scales: {
       y: {
         beginAtZero: true,
-        max: 100,
+        max: 110, // Slightly more than 100 to add padding
+        display: false,
         ticks: {
-          callback: function(value) {
-            return value + '%'
-          }
+          display: false
+        },
+        grid: {
+          display: false
         }
       },
       x: {
@@ -384,7 +467,7 @@ export default function HabitsPage() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40 border-r border-gray-200
+          fixed lg:sticky top-0 h-screen bg-white shadow-xl z-50 border-r border-gray-200
           w-80 transition-transform duration-300 ease-in-out flex flex-col
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -406,20 +489,6 @@ export default function HabitsPage() {
             {/* Navigation */}
             <nav className="space-y-2">
               <button
-                onClick={() => router.push('/dashboard')}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-              >
-                <ListTodo className="w-5 h-5" />
-                Dashboard
-              </button>
-              <button
-                onClick={() => router.push('/deadlines')}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-              >
-                <Target className="w-5 h-5" />
-                Deadlines
-              </button>
-              <button
                 onClick={() => router.push('/habits')}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
               >
@@ -427,18 +496,25 @@ export default function HabitsPage() {
                 Streaks
               </button>
               <button
-                onClick={() => router.push('/ai')}
+                onClick={() => router.push('/progress')}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
               >
-                <Sparkles className="w-5 h-5" />
-                AI
+                <TrendingUp className="w-5 h-5" />
+                Progress
               </button>
               <button
-                onClick={() => router.push('/call-me')}
+                onClick={() => router.push('/task')}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
               >
-                <Phone className="w-5 h-5" />
-                Call Me
+                <ListTodo className="w-5 h-5" />
+                Task
+              </button>
+              <button
+                onClick={() => router.push('/deadlines')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <Target className="w-5 h-5" />
+                Deadlines
               </button>
             </nav>
           </div>
@@ -448,7 +524,32 @@ export default function HabitsPage() {
         <div className="p-6 border-t border-gray-200">
           <div className="flex items-center gap-3">
             <UserButton afterSignOutUrl="/" />
-            <span className="text-sm text-gray-600">Profile</span>
+            <button 
+              onClick={() => {
+                // Try to find and click the actual UserButton
+                const userButtonElements = document.querySelectorAll('button');
+                for (const btn of userButtonElements) {
+                  // Check if this button is the Clerk UserButton
+                  if (btn.querySelector('img') || btn.getAttribute('data-clerk-user-button') || 
+                      btn.className.includes('clerk') || btn.getAttribute('aria-label')?.includes('user')) {
+                    btn.click();
+                    return;
+                  }
+                }
+                // If no UserButton found, try to trigger the menu directly
+                const clerkElements = document.querySelectorAll('[class*="clerk"]');
+                for (const elem of clerkElements) {
+                  if (elem.tagName === 'BUTTON' || elem.querySelector('button')) {
+                    const button = elem.tagName === 'BUTTON' ? elem : elem.querySelector('button');
+                    button.click();
+                    return;
+                  }
+                }
+              }}
+              className="text-sm text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
+            >
+              {fullName || 'Profile'}
+            </button>
           </div>
         </div>
       </aside>
@@ -464,17 +565,17 @@ export default function HabitsPage() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         {/* Header */}
-        <header className="bg-white border-b sticky top-0 z-40">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-4">
+        <header className="bg-white border-b sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+            <div className="flex items-center space-x-4 min-w-0">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
                 <Menu className="w-6 h-6" />
               </button>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">{monthName}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 truncate">{monthName}</h2>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center items-stretch gap-2 sm:gap-3">
               <Button 
                 onClick={() => {
                   setShowPastData(true)
@@ -494,10 +595,10 @@ export default function HabitsPage() {
           </div>
         </header>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Progress Chart */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="h-64">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+            <div className="h-48 sm:h-64 -mt-4 pt-4">
               <Line data={chartData} options={chartOptions} />
             </div>
           </div>
@@ -548,19 +649,19 @@ export default function HabitsPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
                         Habit
                       </th>
                       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
                         <th 
                           key={day} 
                           ref={day === currentDay ? currentDayRef : null}
-                          className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider ${day === currentDay ? 'bg-purple-100 text-purple-700' : 'text-gray-500'}`}
+                          className={`px-2 sm:px-3 py-3 text-center text-xs font-medium uppercase tracking-wider ${day === currentDay ? 'bg-purple-100 text-purple-700' : 'text-gray-500'}`}
                         >
                           {day}
                         </th>
                       ))}
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50">
+                      <th className="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50">
                         Actions
                       </th>
                     </tr>
@@ -568,7 +669,7 @@ export default function HabitsPage() {
                   <tbody className="divide-y divide-gray-200">
                     {habits.map((habit, index) => (
                       <tr key={habit.id} style={{ backgroundColor: habit.color || HABIT_COLORS[index % HABIT_COLORS.length].value }}>
-                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-800 sticky left-0 z-10" style={{ backgroundColor: habit.color || HABIT_COLORS[index % HABIT_COLORS.length].value }}>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap font-medium text-gray-800 sticky left-0 z-10" style={{ backgroundColor: habit.color || HABIT_COLORS[index % HABIT_COLORS.length].value }}>
                           {habit.habit_name}
                         </td>
                         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -578,9 +679,9 @@ export default function HabitsPage() {
                           const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                           
                           return (
-                            <td key={day} className={`px-3 py-4 text-center ${day === currentDay ? 'bg-purple-50' : ''}`}>
+                            <td key={day} className={`px-2 sm:px-3 py-4 text-center ${day === currentDay ? 'bg-purple-50' : ''}`}>
                               <button
-                                onClick={() => toggleCompletion(habit.id, dateStr)}
+                                onClick={() => toggleCompletion(habit.id, dateStr, completed)}
                                 className={`w-8 h-8 rounded-full border-2 transition-all ${
                                   completed 
                                     ? 'bg-purple-600 border-purple-600' 
@@ -598,7 +699,7 @@ export default function HabitsPage() {
                             </td>
                           )
                         })}
-                        <td className="px-6 py-4 text-center sticky right-0" style={{ backgroundColor: habit.color || HABIT_COLORS[index % HABIT_COLORS.length].value }}>
+                        <td className="px-3 sm:px-6 py-4 text-center sticky right-0" style={{ backgroundColor: habit.color || HABIT_COLORS[index % HABIT_COLORS.length].value }}>
                           <button
                             onClick={() => deleteHabit(habit.id)}
                             className="text-red-600 hover:text-red-800 transition-colors"
@@ -741,7 +842,7 @@ export default function HabitsPage() {
                     const chartData = {
                       labels: Array.from({ length: daysInMonth }, (_, i) => i + 1),
                       datasets: [{
-                        label: 'Completion %',
+                        label: 'Completion',
                         data: scores,
                         borderColor: 'rgb(139, 92, 246)',
                         backgroundColor: 'rgba(139, 92, 246, 0.1)',
@@ -757,18 +858,33 @@ export default function HabitsPage() {
                       maintainAspectRatio: false,
                       plugins: {
                         legend: { display: false },
+                        tooltip: {
+                          callbacks: {
+                            label: function(context) {
+                              return context.parsed.y
+                            }
+                          }
+                        },
                         title: {
                           display: false
+                        }
+                      },
+                      layout: {
+                        padding: {
+                          top: 20,
+                          bottom: 10
                         }
                       },
                       scales: {
                         y: {
                           beginAtZero: true,
-                          max: 100,
+                          max: 110, // Slightly more than 100 to add padding
+                          display: false,
                           ticks: {
-                            callback: function(value) {
-                              return value + '%'
-                            }
+                            display: false
+                          },
+                          grid: {
+                            display: false
                           }
                         },
                         x: {
@@ -782,7 +898,7 @@ export default function HabitsPage() {
                         <h4 className="text-xl font-bold text-gray-800 mb-4">{monthData.monthName}</h4>
                         
                         {/* Chart */}
-                        <div className="bg-white rounded-lg p-4 mb-4 h-48">
+                        <div className="bg-white rounded-lg p-4 mb-4 h-48 -mt-4 pt-4">
                           <Line data={chartData} options={chartOptions} />
                         </div>
 
@@ -842,6 +958,31 @@ export default function HabitsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Avatar Guide */}
+      {console.log('Avatar Guide render - showGuide:', showGuide, 'loading:', loading, 'avatarManager:', avatarManager)}
+      <AvatarGuide
+        messages={avatarManager.getPageMessages('habits')}
+        isVisible={showGuide && !loading}
+        onClose={() => setShowGuide(false)}
+        avatarImage={avatarManager.getPageAvatar('habits')}
+        avatarName={avatarManager.getPageAvatarName('habits')}
+        autoHideDelay={avatarManager.getSettings().autoHideDelay}
+        typewriterSpeed={avatarManager.getSettings().typewriterSpeed}
+      />
+
+      {/* Completion Avatar */}
+      {completionAvatar && (
+        <AvatarGuide
+          messages={completionAvatar.messages}
+          isVisible={true}
+          onClose={() => setCompletionAvatar(null)}
+          avatarImage={completionAvatar.avatarImage}
+          avatarName={completionAvatar.avatarName}
+          autoHideDelay={completionAvatar.autoHideDelay}
+          typewriterSpeed={completionAvatar.typewriterSpeed}
+        />
       )}
     </div>
   )

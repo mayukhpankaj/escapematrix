@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
-import { Menu, X, ListTodo, Target, Plus, Sparkles, Phone, CalendarDays } from 'lucide-react'
+import { TrendingUp, ListTodo, Target, Zap, Menu, X, CalendarDays } from 'lucide-react'
 import TaskCard from '@/components/TaskCard'
 import TaskFormModal from '@/components/TaskFormModal'
 import Image from 'next/image'
@@ -20,7 +20,7 @@ export default function LongTermPage() {
   const router = useRouter()
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
-  const { setUser, userId } = useUserStore()
+  const { setUser, fullName } = useUserStore()
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -104,11 +104,25 @@ export default function LongTermPage() {
               {/* Navigation */}
               <nav className="space-y-2">
                 <button
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push('/habits')}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
+                >
+                  <CalendarDays className="w-5 h-5" />
+                  Daily Habit Tracker
+                </button>
+                <button
+                  onClick={() => router.push('/progress')}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  Progress
+                </button>
+                <button
+                  onClick={() => router.push('/task')}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
                 >
                   <ListTodo className="w-5 h-5" />
-                  Dashboard
+                  Task
                 </button>
                 <button
                   onClick={() => router.push('/long-term')}
@@ -116,27 +130,6 @@ export default function LongTermPage() {
                 >
                   <Target className="w-5 h-5" />
                   Long Term Goals
-                </button>
-                <button
-                  onClick={() => router.push('/habits')}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-                >
-                  <CalendarDays className="w-5 h-5" />
-                  Daily Habit Tracker
-                </button>
-                <button
-                  onClick={() => router.push('/ai')}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  AI
-                </button>
-                <button
-                  onClick={() => router.push('/call-me')}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-                >
-                  <Phone className="w-5 h-5" />
-                  Call Me
                 </button>
               </nav>
             </div>
@@ -146,7 +139,32 @@ export default function LongTermPage() {
           <div className="p-6 border-t border-gray-200">
             <div className="flex items-center gap-3">
               <UserButton afterSignOutUrl="/" />
-              <span className="text-sm text-gray-600">Profile</span>
+              <button 
+                onClick={() => {
+                  // Try to find and click the actual UserButton
+                  const userButtonElements = document.querySelectorAll('button');
+                  for (const btn of userButtonElements) {
+                    // Check if this button is the Clerk UserButton
+                    if (btn.querySelector('img') || btn.getAttribute('data-clerk-user-button') || 
+                        btn.className.includes('clerk') || btn.getAttribute('aria-label')?.includes('user')) {
+                      btn.click();
+                      return;
+                    }
+                  }
+                  // If no UserButton found, try to trigger the menu directly
+                  const clerkElements = document.querySelectorAll('[class*="clerk"]');
+                  for (const elem of clerkElements) {
+                    if (elem.tagName === 'BUTTON' || elem.querySelector('button')) {
+                      const button = elem.tagName === 'BUTTON' ? elem : elem.querySelector('button');
+                      button.click();
+                      return;
+                    }
+                  }
+                }}
+                className="text-sm text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
+              >
+                {fullName || 'Profile'}
+              </button>
             </div>
           </div>
         </aside>

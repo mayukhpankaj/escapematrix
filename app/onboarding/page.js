@@ -42,7 +42,7 @@ export default function OnboardingPage() {
     } else {
       // Complete onboarding
       localStorage.setItem('onboarding_completed', 'true')
-      router.push('/dashboard')
+      router.push('/habits')
     }
   }
 

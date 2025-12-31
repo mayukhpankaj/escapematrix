@@ -1,0 +1,627 @@
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth, UserButton, useUser } from '@clerk/nextjs'
+import { Button } from '@/components/ui/button'
+import { Home, ListTodo, Target, Zap, Menu, X } from 'lucide-react'
+import Image from 'next/image'
+import useUserStore from '@/store/userStore'
+import { Radar, Bar } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+  BarElement,
+  BarController,
+  CategoryScale
+} from 'chart.js'
+
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, BarElement, BarController, CategoryScale)
+
+const API_BASE = '/backend-api/api'
+
+const clamp = (n, min, max) => Math.max(min, Math.min(max, n))
+
+const safePct = (num, den) => {
+  if (!den || den <= 0) return 0
+  return (num / den) * 100
+}
+
+const toISODate = (d) => {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+
+const addDays = (d, n) => {
+  const x = new Date(d)
+  x.setDate(x.getDate() + n)
+  return x
+}
+
+const parseDateLike = (value) => {
+  if (!value) return null
+  const dt = new Date(value)
+  if (Number.isNaN(dt.getTime())) return null
+  return dt
+}
+
+export default function HomePage() {
+  const router = useRouter()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
+  const { user } = useUser()
+  const { setUser } = useUserStore()
+
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const [habits, setHabits] = useState([])
+  const [completions, setCompletions] = useState([])
+
+  const [tasks, setTasks] = useState({ 'TO-DO': [], 'IN-PROGRESS': [], 'COMPLETED': [] })
+  const [deadlines, setDeadlines] = useState([])
+  const [monthlyData, setMonthlyData] = useState([])
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/')
+    } else if (isSignedIn && user) {
+      setUser({
+        userId: user.id,
+        email: user.primaryEmailAddress?.emailAddress,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: user.fullName,
+        imageUrl: user.imageUrl,
+        username: user.username,
+      })
+    }
+  }, [isSignedIn, isLoaded, user, router, setUser])
+
+  useEffect(() => {
+    if (!isSignedIn) return
+    const run = async () => {
+      setLoading(true)
+      try {
+        const token = await getToken()
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = now.getMonth() + 1
+
+        const [habitsRes, completionsRes, tasksRes, deadlinesRes] = await Promise.all([
+          fetch(`${API_BASE}/habits`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE}/habits/completions/${year}/${month}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE}/tasks`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE}/deadlines`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        ])
+
+        const habitsData = habitsRes.ok ? await habitsRes.json() : []
+        const completionsData = completionsRes.ok ? await completionsRes.json() : []
+        const tasksData = tasksRes.ok ? await tasksRes.json() : {}
+        const deadlinesData = deadlinesRes.ok ? await deadlinesRes.json() : []
+
+        setHabits(Array.isArray(habitsData) ? habitsData : [])
+        setCompletions(Array.isArray(completionsData) ? completionsData : [])
+
+        const filteredTasks = {
+          'TO-DO': [],
+          'IN-PROGRESS': [],
+          'COMPLETED': []
+        }
+
+        Object.keys(tasksData || {}).forEach(status => {
+          if (tasksData[status]) {
+            const shortTermTasks = tasksData[status].filter(task => task.task_type === 'SHORT_TERM')
+
+            if (status === 'PENDING') {
+              filteredTasks['IN-PROGRESS'] = shortTermTasks
+            } else if (status === 'IN-PROGRESS') {
+              filteredTasks['IN-PROGRESS'] = [...filteredTasks['IN-PROGRESS'], ...shortTermTasks]
+            } else {
+              filteredTasks[status] = shortTermTasks
+            }
+          }
+        })
+
+        const normalizedDeadlines = Array.isArray(deadlinesData) ? deadlinesData : []
+        normalizedDeadlines.forEach(deadline => {
+          const deadlineTask = {
+            ...deadline,
+            isDeadline: true,
+            task_type: 'DEADLINE'
+          }
+
+          if (deadline.status === 'PENDING') {
+            filteredTasks['TO-DO'].push(deadlineTask)
+          } else if (deadline.status === 'IN-PROGRESS' || deadline.status === 'OVERDUE') {
+            filteredTasks['IN-PROGRESS'].push(deadlineTask)
+          } else if (deadline.status === 'COMPLETED') {
+            filteredTasks['COMPLETED'].push(deadlineTask)
+          }
+        })
+
+        setTasks(filteredTasks)
+        setDeadlines(normalizedDeadlines)
+
+        // Calculate monthly data for bar chart
+        const monthlyDataArray = await calculateMonthlyData(token, year, habitsData)
+        setMonthlyData(monthlyDataArray)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    run()
+  }, [isSignedIn, getToken])
+
+  const calculateMonthlyData = async (token, year, allHabits) => {
+    const monthlyData = []
+    const now = new Date()
+    const currentMonth = now.getMonth() + 1
+    const alpha = 0.75 // Streak scaling factor
+    const MaxExpected = 200 // Upper bound for normalization
+
+    for (let month = 1; month <= 12; month++) {
+      const isFutureMonth = month > currentMonth
+      const isCurrentMonth = month === currentMonth
+
+      if (isFutureMonth) {
+        // Future months: set to zero
+        monthlyData.push({
+          month: month,
+          monthName: new Date(year, month - 1, 1).toLocaleString('default', { month: 'short' }),
+          completedTasks: 0,
+          maxStreak: 0,
+          rawScore: 0,
+          normalizedScore: 0
+        })
+        continue
+      }
+
+      // Fetch data for this month
+      const [completionsRes, tasksRes, deadlinesRes] = await Promise.all([
+        fetch(`${API_BASE}/habits/completions/${year}/${month}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE}/tasks`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE}/deadlines`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      ])
+
+      const monthCompletions = completionsRes.ok ? await completionsRes.json() : []
+      const monthTasksData = tasksRes.ok ? await tasksRes.json() : {}
+      const monthDeadlinesData = deadlinesRes.ok ? await deadlinesRes.json() : []
+
+      // Calculate completed tasks (C_m)
+      const allMonthTasks = []
+      Object.keys(monthTasksData || {}).forEach(status => {
+        if (monthTasksData[status]) {
+          const shortTermTasks = monthTasksData[status].filter(task => task.task_type === 'SHORT_TERM')
+          allMonthTasks.push(...shortTermTasks)
+        }
+      })
+
+      const normalizedMonthDeadlines = Array.isArray(monthDeadlinesData) ? monthDeadlinesData : []
+      normalizedMonthDeadlines.forEach(deadline => {
+        const deadlineTask = {
+          ...deadline,
+          isDeadline: true,
+          task_type: 'DEADLINE'
+        }
+
+        if (deadline.status === 'COMPLETED') {
+          allMonthTasks.push(deadlineTask)
+        }
+      })
+
+      const completedTasks = allMonthTasks.filter(t => t.status === 'COMPLETED').length
+
+      // Calculate max streak (S_m)
+      const maxStreak = calculateMaxStreak(monthCompletions, allHabits, year, month)
+
+      // Calculate raw score
+      const rawScore = completedTasks + (alpha * maxStreak)
+
+      // Normalize to 0-100 scale
+      const normalizedScore = Math.min((rawScore / MaxExpected) * 100, 100)
+
+      monthlyData.push({
+        month,
+        monthName: new Date(year, month - 1, 1).toLocaleString('default', { month: 'short' }),
+        completedTasks,
+        maxStreak,
+        rawScore,
+        normalizedScore
+      })
+    }
+
+    return monthlyData
+  }
+
+  const calculateMaxStreak = (monthCompletions, allHabits, year, month) => {
+    if (!allHabits.length || allHabits.length === 0) return 0
+
+    const daysInMonth = new Date(year, month, 0).getDate()
+    const habitsCount = allHabits.length
+
+    let maxStreak = 0
+    let currentStreak = 0
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      const dayCompletions = monthCompletions.filter(c => c.completion_date === dateStr)
+      const dayIsPerfect = dayCompletions.length >= habitsCount
+
+      if (dayIsPerfect) {
+        currentStreak += 1
+        maxStreak = Math.max(maxStreak, currentStreak)
+      } else {
+        currentStreak = 0
+      }
+    }
+
+    return maxStreak
+  }
+
+  const metrics = useMemo(() => {
+    const now = new Date()
+    const today = startOfDay(now)
+
+    const daysElapsed = today.getDate()
+    const habitsCount = Array.isArray(habits) ? habits.length : 0
+
+    const completionDates = new Map()
+    const completionByDate = new Map()
+
+    for (const c of completions || []) {
+      const dateStr = c.completion_date
+      if (!dateStr) continue
+      const dt = parseDateLike(dateStr)
+      if (!dt) continue
+
+      const d = startOfDay(dt)
+      if (d.getFullYear() !== today.getFullYear() || d.getMonth() !== today.getMonth()) continue
+      if (d > today) continue
+
+      const iso = toISODate(d)
+      completionDates.set(iso, true)
+
+      const prev = completionByDate.get(iso) || 0
+      completionByDate.set(iso, prev + 1)
+    }
+
+    const D_total = habitsCount * daysElapsed
+    const D_completed = (completions || []).filter(c => {
+      const dt = parseDateLike(c.completion_date)
+      if (!dt) return false
+      const d = startOfDay(dt)
+      return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d <= today
+    }).length
+
+    const baseConsistency = safePct(D_completed, D_total)
+
+    let streakDays = 0
+    if (habitsCount > 0) {
+      for (let i = 0; i < daysElapsed; i++) {
+        const d = addDays(today, -i)
+        const iso = toISODate(d)
+        const count = completionByDate.get(iso) || 0
+        const dayIsPerfect = count >= habitsCount
+        if (!dayIsPerfect) break
+        streakDays += 1
+      }
+    }
+
+    const consistency = clamp(baseConsistency + Math.min(streakDays * 1.5, 10), 0, 100)
+
+    const allTasks = [...(tasks['TO-DO'] || []), ...(tasks['IN-PROGRESS'] || []), ...(tasks['COMPLETED'] || [])]
+
+    const T_created = allTasks.length
+    const T_done = (tasks['COMPLETED'] || []).length
+
+    const completionRate = safePct(T_done, T_created)
+
+    const completionDaySet = new Set()
+
+    for (const t of tasks['COMPLETED'] || []) {
+      const completedAt = parseDateLike(t.updated_at) || parseDateLike(t.created_at)
+      if (!completedAt) continue
+      completionDaySet.add(toISODate(startOfDay(completedAt)))
+    }
+
+    const Days_active = completionDaySet.size
+    const crunchRaw = Days_active > 0 ? (T_done / Days_active) : 0
+    const expectedMax = 10
+    const crunchScore = clamp(safePct(crunchRaw, expectedMax), 0, 100)
+
+    const completedDeadlines = (deadlines || []).filter(d => d.status === 'COMPLETED')
+    const T_done_with_due = completedDeadlines.length
+
+    let T_on_time = 0
+    for (const d of completedDeadlines) {
+      const due = parseDateLike(d.deadline_time)
+      const completedAt = parseDateLike(d.updated_at) || parseDateLike(d.start_time)
+      if (!due || !completedAt) continue
+      if (completedAt <= due) T_on_time += 1
+    }
+
+    const timeliness = safePct(T_on_time, T_done_with_due)
+
+    return {
+      consistency,
+      completionRate,
+      crunchScore,
+      timeliness,
+      debug: {
+        D_completed,
+        D_total,
+        streakDays,
+        T_done,
+        T_created,
+        Days_active,
+        T_on_time,
+        T_done_with_due,
+      }
+    }
+  }, [habits, completions, tasks, deadlines])
+
+  const chartData = useMemo(() => {
+    return {
+      labels: ['Consistency', 'Completion', 'Crunch', 'Timeliness'],
+      datasets: [
+        {
+          label: 'Score',
+          data: [
+            Math.round(metrics.consistency),
+            Math.round(metrics.completionRate),
+            Math.round(metrics.crunchScore),
+            Math.round(metrics.timeliness),
+          ],
+          fill: true,
+          backgroundColor: 'rgba(139, 92, 246, 0.15)',
+          borderColor: 'rgb(139, 92, 246)',
+          pointBackgroundColor: 'rgb(139, 92, 246)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgb(139, 92, 246)',
+        }
+      ]
+    }
+  }, [metrics])
+
+  const chartOptions = useMemo(() => {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        r: {
+          suggestedMin: 0,
+          suggestedMax: 100,
+          ticks: {
+            stepSize: 20,
+            backdropColor: 'transparent'
+          },
+          pointLabels: {
+            font: {
+              size: 12,
+              weight: '600'
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${ctx.raw}%`
+          }
+        }
+      }
+    }
+  }, [])
+
+  const barChartData = useMemo(() => {
+    return {
+      labels: monthlyData.map(m => m.monthName),
+      datasets: [
+        {
+          label: 'Monthly Score',
+          data: monthlyData.map(m => Math.round(m.normalizedScore)),
+          backgroundColor: 'rgba(139, 92, 246, 0.6)',
+          borderColor: 'rgb(139, 92, 246)',
+          borderWidth: 1,
+          borderRadius: 4,
+        }
+      ]
+    }
+  }, [monthlyData])
+
+  const barChartOptions = useMemo(() => {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            stepSize: 20,
+            callback: (value) => `${value}%`
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const monthData = monthlyData[ctx.dataIndex]
+              if (!monthData) return `${ctx.label}: ${ctx.raw}%`
+              return `${ctx.label}: ${ctx.raw}%`
+            }
+          }
+        }
+      }
+    }
+  }, [monthlyData])
+
+  if (!isLoaded || !isSignedIn) {
+    return null
+  }
+
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+      <aside
+        className={`
+          fixed lg:sticky top-0 h-screen bg-white shadow-xl z-50 border-r border-gray-200
+          w-80 transition-transform duration-300 ease-in-out flex flex-col
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 pt-20 lg:pt-6">
+            <div className="mb-8">
+              <Image
+                src="https://customer-assets.emergentagent.com/job_matrix-escape-11/artifacts/t95qed68_fontbolt%20%283%29.png"
+                alt="Escape Matrix"
+                width={280}
+                height={67}
+                className="w-full h-auto object-contain"
+              />
+            </div>
+
+            <nav className="space-y-2">
+              <button
+                onClick={() => router.push('/home')}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-black text-white rounded-lg font-medium"
+              >
+                <Home className="w-5 h-5" />
+                Home
+              </button>
+              <button
+                onClick={() => router.push('/task')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <ListTodo className="w-5 h-5" />
+                Task
+              </button>
+              <button
+                onClick={() => router.push('/deadlines')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <Target className="w-5 h-5" />
+                Deadlines
+              </button>
+              <button
+                onClick={() => router.push('/habits')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <Zap className="w-5 h-5" />
+                Streaks
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200">
+          <div className="flex items-center gap-3">
+            <UserButton afterSignOutUrl="/" />
+            <span className="text-sm text-gray-600">Profile</span>
+          </div>
+        </div>
+      </aside>
+
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <main className="flex-1 overflow-auto">
+        <header className="bg-white border-b sticky top-0 z-30">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4">
+            <div className="flex items-center space-x-4 min-w-0">
+              <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
+                <Menu className="w-6 h-6" />
+              </button>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 truncate">Home</h2>
+                <p className="text-gray-500 text-sm">Your habit + task performance snapshot</p>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="p-4 sm:p-6 space-y-6">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Radar</h3>
+                <div className="h-[360px]">
+                  <Radar data={chartData} options={chartOptions} />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Scores</h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-700 font-medium">Consistency Score</div>
+                    <div className="text-gray-900 font-semibold">{Math.round(metrics.consistency)}%</div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-700 font-medium">Task Completion Rate</div>
+                    <div className="text-gray-900 font-semibold">{Math.round(metrics.completionRate)}%</div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-700 font-medium">Productivity / Crunch</div>
+                    <div className="text-gray-900 font-semibold">{Math.round(metrics.crunchScore)}%</div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-700 font-medium">Timeliness Score</div>
+                    <div className="text-gray-900 font-semibold">{Math.round(metrics.timeliness)}%</div>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <Button onClick={() => router.push('/task')} className="bg-black hover:bg-gray-800 text-white">
+                    Go to Tasks
+                  </Button>
+                  <Button onClick={() => router.push('/habits')} variant="outline">
+                    Go to Streaks
+                  </Button>
+                </div>
+              </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Performance</h3>
+              <div className="h-[300px]">
+                <Bar data={barChartData} options={barChartOptions} />
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}

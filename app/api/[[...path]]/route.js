@@ -1,6 +1,7 @@
 import { MongoClient } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 
 // MongoDB connection
 let client
@@ -29,6 +30,23 @@ export async function OPTIONS() {
   return handleCORS(new NextResponse(null, { status: 200 }))
 }
 
+// Helper function to verify Clerk token
+async function verifyToken(request) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('No token provided')
+    }
+    
+    const token = authHeader.substring(7)
+    const { userId } = await auth().verifyToken(token)
+    return userId
+  } catch (error) {
+    console.error('Token verification failed:', error)
+    throw new Error('Invalid token')
+  }
+}
+
 // Route handler function
 async function handleRoute(request, { params }) {
   const { path = [] } = params
@@ -37,6 +55,30 @@ async function handleRoute(request, { params }) {
 
   try {
     const db = await connectToMongo()
+
+    // Task update endpoint - PUT /api/tasks/{task_id}
+    if (route.startsWith('/tasks/') && method === 'PUT') {
+      const taskId = route.split('/')[2]
+      const body = await request.json()
+      
+      // Verify user authentication
+      const userId = await verifyToken(request)
+      
+      // Update task in database
+      const result = await db.collection('short_term_tasks').updateOne(
+        { id: taskId, user_id: userId },
+        { $set: { markdown_content: body.markdown_content, updated_at: new Date() } }
+      )
+      
+      if (result.matchedCount === 0) {
+        return handleCORS(NextResponse.json(
+          { error: "Task not found" }, 
+          { status: 404 }
+        ))
+      }
+      
+      return handleCORS(NextResponse.json({ success: true }))
+    }
 
     // Root endpoint - GET /api/root (since /api/ is not accessible with catch-all)
     if (route === '/root' && method === 'GET') {

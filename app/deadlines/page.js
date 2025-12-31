@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Menu, X, ListTodo, Target, Sparkles, Plus, Trash2, Phone, CalendarDays, Clock, AlertCircle, CheckCircle2, Zap } from 'lucide-react'
+import { TrendingUp, ListTodo, Target, Zap, Menu, X, Clock, CheckCircle2, AlertCircle, Plus } from 'lucide-react'
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
 
@@ -26,11 +26,88 @@ const STATUS_COLORS = {
   'OVERDUE': { bg: 'bg-red-100', text: 'text-red-700', icon: AlertCircle }
 }
 
+const pad2 = (n) => String(n).padStart(2, '0')
+
+const getCountdown = (deadlineTime, now) => {
+  const deadline = new Date(deadlineTime)
+  const diffMs = deadline - now
+
+  if (diffMs <= 0) {
+    return { isOverdue: true, days: '00', hours: '00', minutes: '00', seconds: '00' }
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000)
+  const days = Math.floor(totalSeconds / (60 * 60 * 24))
+  const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60))
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60)
+  const seconds = totalSeconds % 60
+
+  return {
+    isOverdue: false,
+    days: String(days).padStart(2, '0'),
+    hours: String(hours).padStart(2, '0'),
+    minutes: String(minutes).padStart(2, '0'),
+    seconds: String(seconds).padStart(2, '0')
+  }
+}
+
+function FlipDigit({ digit, label }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.classList.remove('flip-animate')
+    void el.offsetWidth
+    el.classList.add('flip-animate')
+  }, [digit])
+
+  return (
+    <div className="flex flex-col items-center mx-0.5 sm:mx-1">
+      <div className="flex">
+        <span className="flip-digit w-6 h-8 sm:w-8 sm:h-12 rounded-tl rounded-bl bg-black text-white font-mono text-sm sm:text-lg md:text-xl font-bold flex items-center justify-center">
+          <span ref={ref} className="flip-digit-inner flip-animate">
+            {digit[0]}
+          </span>
+        </span>
+        <span className="flip-digit w-6 h-8 sm:w-8 sm:h-12 rounded-tr rounded-br bg-black text-white font-mono text-sm sm:text-lg md:text-xl font-bold flex items-center justify-center ml-px">
+          <span ref={useRef(null)} className="flip-digit-inner">
+            {digit[1]}
+          </span>
+        </span>
+      </div>
+      {label && (
+        <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+          {label}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FlipCountdown({ deadlineTime, now }) {
+  const countdown = getCountdown(deadlineTime, now)
+  if (countdown.isOverdue) return <span>Overdue</span>
+
+  return (
+    <div className="flex items-center space-x-1 sm:space-x-2">
+      <FlipDigit digit={countdown.days} label="DAYS" />
+      <span className="text-xl sm:text-2xl text-gray-400 -mb-3 sm:-mb-4">:</span>
+      <FlipDigit digit={countdown.hours} label="HOURS" />
+      <span className="text-xl sm:text-2xl text-gray-400 -mb-3 sm:-mb-4">:</span>
+      <FlipDigit digit={countdown.minutes} label="MIN" />
+      <span className="text-xl sm:text-2xl text-gray-400 -mb-3 sm:-mb-4">:</span>
+      <FlipDigit digit={countdown.seconds} label="SEC" />
+    </div>
+  )
+}
+
 export default function DeadlinesPage() {
   const [deadlines, setDeadlines] = useState([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [now, setNow] = useState(() => new Date())
   
   // Form state
   const [taskName, setTaskName] = useState('')
@@ -42,7 +119,7 @@ export default function DeadlinesPage() {
   const router = useRouter()
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
-  const { setUser } = useUserStore()
+  const { setUser, fullName } = useUserStore()
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -65,6 +142,11 @@ export default function DeadlinesPage() {
       fetchDeadlines()
     }
   }, [isSignedIn])
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
 
   const fetchDeadlines = async () => {
     try {
@@ -151,51 +233,7 @@ export default function DeadlinesPage() {
     }
   }
 
-  // Gantt Chart Helper Functions
-  const getGanttData = () => {
-    if (deadlines.length === 0) return { minDate: new Date(), maxDate: new Date(), days: [] }
-    
-    const now = new Date()
-    const dates = deadlines.map(d => {
-      const startDate = new Date(d.start_time)
-      const deadlineDate = new Date(d.deadline_time)
-      return [startDate, deadlineDate]
-    }).flat()
-    
-    dates.push(now)
-    
-    const minDate = new Date(Math.min(...dates))
-    const maxDate = new Date(Math.max(...dates))
-    
-    // Add padding
-    minDate.setDate(minDate.getDate() - 1)
-    maxDate.setDate(maxDate.getDate() + 1)
-    
-    // Generate days array
-    const days = []
-    let currentDate = new Date(minDate)
-    while (currentDate <= maxDate) {
-      days.push(new Date(currentDate))
-      currentDate.setDate(currentDate.getDate() + 1)
-    }
-    
-    return { minDate, maxDate, days }
-  }
-
-  const calculateBarPosition = (startTime, deadlineTime, minDate, maxDate) => {
-    const totalDays = (maxDate - minDate) / (1000 * 60 * 60 * 24)
-    const startDate = new Date(startTime)
-    const endDate = new Date(deadlineTime)
-    
-    const startOffset = (startDate - minDate) / (1000 * 60 * 60 * 24)
-    const duration = (endDate - startDate) / (1000 * 60 * 60 * 24)
-    
-    const left = (startOffset / totalDays) * 100
-    const width = (duration / totalDays) * 100
-    
-    return { left: `${left}%`, width: `${Math.max(width, 1)}%` }
-  }
-
+  
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', { 
       month: 'short', 
@@ -205,41 +243,18 @@ export default function DeadlinesPage() {
     })
   }
 
-  const getTimeRemaining = (deadlineTime) => {
-    const now = new Date()
-    const deadline = new Date(deadlineTime)
-    const diff = deadline - now
-    
-    if (diff <= 0) {
-      return { text: 'Overdue', isOverdue: true }
-    }
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-    
-    if (days > 0) {
-      return { text: `${days}d ${hours}h ${minutes}m`, isOverdue: false }
-    } else if (hours > 0) {
-      return { text: `${hours}h ${minutes}m`, isOverdue: false }
-    } else {
-      return { text: `${minutes}m`, isOverdue: false }
-    }
-  }
+  const getTimeRemaining = (deadlineTime) => getCountdown(deadlineTime, now)
 
   if (!isLoaded || !isSignedIn) {
     return null
   }
-
-  const { minDate, maxDate, days } = getGanttData()
-  const now = new Date()
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:sticky top-0 h-screen bg-white shadow-xl z-40 border-r border-gray-200
+          fixed lg:sticky top-0 h-screen bg-white shadow-xl z-50 border-r border-gray-200
           w-80 transition-transform duration-300 ease-in-out flex flex-col
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -258,11 +273,25 @@ export default function DeadlinesPage() {
 
             <nav className="space-y-2">
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push('/habits')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <Zap className="w-5 h-5" />
+                Streaks
+              </button>
+              <button
+                onClick={() => router.push('/progress')}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
+              >
+                <TrendingUp className="w-5 h-5" />
+                Progress
+              </button>
+              <button
+                onClick={() => router.push('/task')}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
               >
                 <ListTodo className="w-5 h-5" />
-                Dashboard
+                Task
               </button>
               <button
                 onClick={() => router.push('/deadlines')}
@@ -271,27 +300,6 @@ export default function DeadlinesPage() {
                 <Target className="w-5 h-5" />
                 Deadlines
               </button>
-              <button
-                onClick={() => router.push('/habits')}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-              >
-                <Zap className="w-5 h-5" />
-                Streaks
-              </button>
-              <button
-                onClick={() => router.push('/ai')}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-              >
-                <Sparkles className="w-5 h-5" />
-                AI
-              </button>
-              <button
-                onClick={() => router.push('/call-me')}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 rounded-lg font-medium text-gray-700"
-              >
-                <Phone className="w-5 h-5" />
-                Call Me
-              </button>
             </nav>
           </div>
         </div>
@@ -299,7 +307,32 @@ export default function DeadlinesPage() {
         <div className="p-6 border-t border-gray-200">
           <div className="flex items-center gap-3">
             <UserButton afterSignOutUrl="/" />
-            <span className="text-sm text-gray-600">Profile</span>
+            <button 
+              onClick={() => {
+                // Try to find and click the actual UserButton
+                const userButtonElements = document.querySelectorAll('button');
+                for (const btn of userButtonElements) {
+                  // Check if this button is the Clerk UserButton
+                  if (btn.querySelector('img') || btn.getAttribute('data-clerk-user-button') || 
+                      btn.className.includes('clerk') || btn.getAttribute('aria-label')?.includes('user')) {
+                    btn.click();
+                    return;
+                  }
+                }
+                // If no UserButton found, try to trigger the menu directly
+                const clerkElements = document.querySelectorAll('[class*="clerk"]');
+                for (const elem of clerkElements) {
+                  if (elem.tagName === 'BUTTON' || elem.querySelector('button')) {
+                    const button = elem.tagName === 'BUTTON' ? elem : elem.querySelector('button');
+                    button.click();
+                    return;
+                  }
+                }
+              }}
+              className="text-sm text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
+            >
+              {fullName || 'Profile'}
+            </button>
           </div>
         </div>
       </aside>
@@ -314,24 +347,24 @@ export default function DeadlinesPage() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <header className="bg-white border-b sticky top-0 z-40">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-4">
+        <header className="bg-white border-b sticky top-0 z-30">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4">
+            <div className="flex items-center space-x-4 min-w-0">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
                 <Menu className="w-6 h-6" />
               </button>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Deadlines</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 truncate">countdown</h2>
               </div>
             </div>
-            <Button onClick={() => setShowAddModal(true)} className="bg-black hover:bg-gray-800 text-white">
+            <Button onClick={() => setShowAddModal(true)} className="bg-black hover:bg-gray-800 text-white w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               New Deadline
             </Button>
           </div>
         </header>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
@@ -347,109 +380,103 @@ export default function DeadlinesPage() {
               </Button>
             </div>
           ) : (
-            <>
-              {/* Gantt Chart */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Timeline View</h3>
-                <div className="overflow-x-auto">
-                  <div className="min-w-[1200px]">
-                    {/* Timeline Header */}
-                    <div className="flex mb-2 pb-2 border-b">
-                      <div className="w-64 flex-shrink-0"></div>
-                      <div className="flex-1 flex">
-                        {days.map((day, index) => (
-                          <div 
-                            key={index} 
-                            className="flex-1 text-center text-xs text-gray-600 px-1 border-l border-gray-200"
-                          >
-                            <div className="font-medium">{day.getDate()}</div>
-                            <div className="text-gray-400">{day.toLocaleDateString('en-US', { month: 'short' })}</div>
-                            <div className="text-gray-400 text-[10px]">00:00</div>
-                          </div>
-                        ))}
+            <div className="space-y-4">
+              {deadlines.map((deadline) => {
+                const StatusIcon = STATUS_COLORS[deadline.status].icon
+                const timeRemaining = getTimeRemaining(deadline.deadline_time)
+                
+                return (
+                  <div key={deadline.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <StatusIcon className="w-5 h-5" />
+                          <h3 className="text-lg font-semibold text-gray-900">{deadline.task_name}</h3>
+                        </div>
+                        {deadline.task_description && (
+                          <p className="text-gray-600 text-sm mb-3">{deadline.task_description}</p>
+                        )}
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="w-4 h-4" />
+                            {formatDate(deadline.deadline_time)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Timeline Rows */}
-                    {deadlines.map((deadline) => {
-                      const StatusIcon = STATUS_COLORS[deadline.status].icon
-                      const position = calculateBarPosition(deadline.start_time, deadline.deadline_time, minDate, maxDate)
-                      const timeRemaining = getTimeRemaining(deadline.deadline_time)
-                      
-                      return (
-                        <div key={deadline.id} className="flex items-center mb-4 hover:bg-gray-50 py-3 rounded-lg px-2 group">
-                          <div className="w-64 flex-shrink-0 pr-4">
-                            <div className="font-bold text-base text-gray-900 mb-1">{deadline.task_name}</div>
-                            <div className={`text-sm mb-2 ${timeRemaining.isOverdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                              {timeRemaining.isOverdue ? '⚠️ ' : '⏱️ '}
-                              {timeRemaining.text} remaining
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`text-xs px-2 py-1 rounded font-medium ${PRIORITY_COLORS[deadline.priority].bg} ${PRIORITY_COLORS[deadline.priority].text}`}>
-                                {deadline.priority}
-                              </span>
-                              <span className={`text-xs px-2 py-1 rounded flex items-center gap-1 font-medium ${STATUS_COLORS[deadline.status].bg} ${STATUS_COLORS[deadline.status].text}`}>
-                                <StatusIcon className="w-3 h-3" />
-                                {deadline.status}
-                              </span>
-                              <button
-                                onClick={() => deleteDeadline(deadline.id)}
-                                className="text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                                title="Delete deadline"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex-1 relative h-10">
-                            {/* Hour markers */}
-                            <div className="absolute inset-0 flex">
-                              {days.map((_, index) => (
-                                <div key={index} className="flex-1 border-l border-gray-100">
-                                  <div className="h-full flex">
-                                    {[0, 6, 12, 18].map((hour) => (
-                                      <div key={hour} className="flex-1 border-l border-gray-50" />
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            {/* Today marker */}
-                            {now >= minDate && now <= maxDate && (
-                              <div 
-                                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
-                                style={{ 
-                                  left: `${((now - minDate) / (maxDate - minDate)) * 100}%` 
-                                }}
-                              >
-                                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                                  <div className="bg-red-500 text-white text-[10px] px-1 rounded whitespace-nowrap">Now</div>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Gantt Bar */}
-                            <div
-                              className={`absolute top-1 h-8 rounded-lg cursor-pointer transition-all hover:shadow-lg z-10 flex items-center justify-center text-white text-xs font-semibold ${
-                                deadline.status === 'COMPLETED' ? 'bg-green-500' :
-                                deadline.status === 'OVERDUE' ? 'bg-red-500' :
-                                deadline.status === 'IN-PROGRESS' ? 'bg-blue-500' :
-                                'bg-gray-400'
-                              }`}
-                              style={position}
-                              title={`${deadline.task_name}\nStart: ${formatDate(deadline.start_time)}\nDeadline: ${formatDate(deadline.deadline_time)}\nRemaining: ${timeRemaining.text}`}
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <button
+                            onClick={() => {
+                              const dropdown = document.getElementById(`status-dropdown-${deadline.id}`)
+                              dropdown.classList.toggle('hidden')
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 hover:shadow-md ${STATUS_COLORS[deadline.status].bg} ${STATUS_COLORS[deadline.status].text} border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black flex items-center gap-1`}
+                          >
+                            <StatusIcon className="w-3 h-3" />
+                            {deadline.status.replace('-', ' ')}
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          <div
+                            id={`status-dropdown-${deadline.id}`}
+                            className="hidden absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-10 overflow-hidden"
+                          >
+                            <button
+                              onClick={() => {
+                                updateStatus(deadline.id, 'PENDING')
+                                document.getElementById(`status-dropdown-${deadline.id}`).classList.add('hidden')
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors"
                             >
-                              <span className="px-2 truncate">{deadline.task_name}</span>
-                            </div>
+                              <Clock className="w-3 h-3 text-gray-500" />
+                              Pending
+                            </button>
+                            <button
+                              onClick={() => {
+                                updateStatus(deadline.id, 'IN-PROGRESS')
+                                document.getElementById(`status-dropdown-${deadline.id}`).classList.add('hidden')
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                            >
+                              <Clock className="w-3 h-3 text-blue-500" />
+                              In Progress
+                            </button>
+                            <button
+                              onClick={() => {
+                                updateStatus(deadline.id, 'COMPLETED')
+                                document.getElementById(`status-dropdown-${deadline.id}`).classList.add('hidden')
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                            >
+                              <CheckCircle2 className="w-3 h-3 text-green-500" />
+                              Completed
+                            </button>
                           </div>
                         </div>
-                      )
-                    })}
+                        <button
+                          onClick={() => deleteDeadline(deadline.id)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className={`text-center py-3 px-4 rounded-lg ${timeRemaining.isOverdue ? 'bg-red-50' : 'bg-gray-50'}`}>
+                      {timeRemaining.isOverdue ? (
+                        <div className="text-red-600 font-semibold">
+                          <AlertCircle className="w-5 h-5 mx-auto mb-1" />
+                          Overdue
+                        </div>
+                      ) : (
+                        <FlipCountdown deadlineTime={deadline.deadline_time} now={now} />
+                      )}
+                    </div>
                   </div>
-                </div>
-              </div>
-            </>
+                )
+              })}
+            </div>
           )}
         </div>
       </main>

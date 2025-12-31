@@ -139,3 +139,295 @@ code {
     @apply bg-background text-foreground;
     }
 }
+
+@keyframes countdown-flip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(-180deg);
+  }
+  100% {
+    transform: rotateX(-360deg);
+  }
+}
+
+.flip-digit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 800px;
+}
+
+.flip-digit-inner {
+  display: inline-block;
+  transform-origin: 50% 55%;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.flip-animate {
+  animation: countdown-flip 0.45s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-animate {
+    animation: none;
+  }
+}
+
+/* MDX Editor toolbar and dropdown z-index fixes */
+.mdx-editor {
+  position: relative;
+}
+
+.mdx-editor .toolbar,
+.mdx-editor .toolbar * {
+  z-index: 100 !important;
+}
+
+.mdx-editor [data-radix-dropdown-menu-content],
+.mdx-editor [data-radix-select-content],
+.mdx-editor [data-radix-popover-content],
+.mdx-editor [data-radix-tooltip-content] {
+  z-index: 100 !important;
+}
+
+/* More specific rules for BlockTypeSelect and other dropdowns */
+.mdx-editor .blocktype-select,
+.mdx-editor .blocktype-select *,
+.mdx-editor .toolbar-content,
+.mdx-editor .toolbar-content * {
+  z-index: 100 !important;
+}
+
+/* Ensure all dropdown content within MDX editor is above modal */
+div.mdx-editor div[data-radix-dropdown-menu-content],
+div.mdx-editor div[data-radix-select-content],
+div.mdx-editor div[data-radix-popover-content] {
+  z-index: 100 !important;
+}
+
+/* Global rule - when modal is open, ensure all dropdowns are above */
+body.modal-open [data-radix-dropdown-menu-content],
+body.modal-open [data-radix-select-content],
+body.modal-open [data-radix-popover-content],
+body.modal-open [data-radix-tooltip-content] {
+  z-index: 100 !important;
+}
+
+/* MDX Editor content styling - ensure headings and text formatting are visible */
+.mdx-editor .prose h1,
+.mdx-editor .prose h2,
+.mdx-editor .prose h3,
+.mdx-editor .prose h4,
+.mdx-editor .prose h5,
+.mdx-editor .prose h6 {
+  font-weight: bold !important;
+  margin: 1rem 0 0.5rem 0 !important;
+  line-height: 1.25 !important;
+}
+
+.mdx-editor .prose h1 {
+  font-size: 2.25rem !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose h2 {
+  font-size: 1.875rem !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose h3 {
+  font-size: 1.5rem !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose h4 {
+  font-size: 1.25rem !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose h5 {
+  font-size: 1.125rem !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose h6 {
+  font-size: 1rem !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose strong,
+.mdx-editor .prose b {
+  font-weight: bold !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose em,
+.mdx-editor .prose i {
+  font-style: italic !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose u {
+  text-decoration: underline !important;
+  color: #111827 !important;
+}
+
+.mdx-editor .prose p {
+  margin: 0.5rem 0 !important;
+  color: #374151 !important;
+}
+
+.mdx-editor .prose blockquote {
+  border-left: 4px solid #e5e7eb !important;
+  padding-left: 1rem !important;
+  margin: 1rem 0 !important;
+  font-style: italic !important;
+  color: #6b7280 !important;
+}
+
+.mdx-editor .prose ul,
+.mdx-editor .prose ol {
+  margin: 0.5rem 0 !important;
+  padding-left: 1.5rem !important;
+  color: #374151 !important;
+}
+
+.mdx-editor .prose li {
+  margin: 0.25rem 0 !important;
+  color: #374151 !important;
+}
+
+.mdx-editor .prose code {
+  background-color: #f3f4f6 !important;
+  padding: 0.125rem 0.25rem !important;
+  border-radius: 0.25rem !important;
+  font-family: monospace !important;
+  font-size: 0.875rem !important;
+  color: #dc2626 !important;
+}
+
+.mdx-editor .prose pre {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+  overflow-x: auto !important;
+  margin: 1rem 0 !important;
+}
+
+.mdx-editor .prose pre code {
+  background-color: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+}
+
+/* Additional overrides for MDX editor to ensure visibility */
+.mdx-editor .prose * {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mdx-editor .prose h1,
+.mdx-editor .prose h2,
+.mdx-editor .prose h3,
+.mdx-editor .prose h4,
+.mdx-editor .prose h5,
+.mdx-editor .prose h6 {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure toolbar buttons are visible */
+.mdx-editor .toolbar button {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Force text formatting to be visible */
+.mdx-editor [data-contenteditable="true"] h1,
+.mdx-editor [data-contenteditable="true"] h2,
+.mdx-editor [data-contenteditable="true"] h3,
+.mdx-editor [data-contenteditable="true"] h4,
+.mdx-editor [data-contenteditable="true"] h5,
+.mdx-editor [data-contenteditable="true"] h6,
+.mdx-editor [data-contenteditable="true"] strong,
+.mdx-editor [data-contenteditable="true"] b,
+.mdx-editor [data-contenteditable="true"] em,
+.mdx-editor [data-contenteditable="true"] i {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline !important;
+  font-weight: bold !important;
+}
+
+.mdx-editor [data-contenteditable="true"] h1,
+.mdx-editor [data-contenteditable="true"] h2,
+.mdx-editor [data-contenteditable="true"] h3,
+.mdx-editor [data-contenteditable="true"] h4,
+.mdx-editor [data-contenteditable="true"] h5,
+.mdx-editor [data-contenteditable="true"] h6 {
+  display: block !important;
+}
+
+/* Specific styles for BlockTypeSelect dropdown */
+.mdx-editor .blocktype-select,
+.mdx-editor .blocktype-select [role="button"],
+.mdx-editor .blocktype-select [data-radix-dropdown-menu-trigger] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-flex !important;
+}
+
+.mdx-editor .blocktype-select [data-radix-dropdown-menu-content] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  min-width: 150px !important;
+  z-index: 100 !important;
+}
+
+.mdx-editor .blocktype-select [data-radix-dropdown-menu-item] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+}
+
+/* Ensure all toolbar dropdowns are visible */
+.mdx-editor .toolbar [data-radix-dropdown-menu-content] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  min-width: 150px !important;
+  z-index: 100 !important;
+}
+
+/* Force all dropdown elements to be visible */
+.mdx-editor [data-radix-dropdown-menu-content] *,
+.mdx-editor [data-radix-dropdown-menu-item] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+}
+
+/* Specific targeting for BlockTypeSelect */
+.mdx-editor button[aria-haspopup="menu"],
+.mdx-editor button[role="button"] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-flex !important;
+}
+
+/* Force any hidden dropdown to show */
+.mdx-editor [style*="display: none"],
+.mdx-editor [style*="visibility: hidden"],
+.mdx-editor [style*="opacity: 0"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}

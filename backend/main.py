@@ -4,7 +4,7 @@ Handles all API endpoints for task management with Clerk authentication
 """
 import os
 from typing import List, Optional, Literal
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -1050,6 +1050,232 @@ async def toggle_habit_completion(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error toggling completion: {str(e)}")
+
+
+# ============= MONTHLY PROGRESS ENDPOINTS =============
+
+class MonthlyProgressCreate(BaseModel):
+    """Model for creating/updating monthly progress"""
+    year: int
+    month: int  # 1-12
+    completed_tasks: int = 0
+    max_streak_days: int = 0
+    streak_score: float = 0.0
+    raw_score: float = 0.0
+    normalized_score: float = 0.0
+
+
+class MonthlyProgressResponse(BaseModel):
+    """Model for monthly progress response"""
+    id: str
+    user_id: str
+    year: int
+    month: int
+    completed_tasks: int
+    max_streak_days: int
+    streak_score: float
+    raw_score: float
+    normalized_score: float
+    updated_at: str
+
+
+@app.get("/api/monthly-progress/{year}")
+async def get_monthly_progress(
+    year: int,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Get all monthly progress for a given year
+    
+    Args:
+        year: Year (e.g., 2025)
+        user_id: Authenticated user ID
+    
+    Returns:
+        List of monthly progress for all 12 months
+    """
+    try:
+        response = supabase.table("monthly_progress").select("*").eq("user_id", user_id).eq("year", year).order("month").execute()
+        
+        # If no data exists, return empty array for all months
+        if not response.data:
+            return []
+        
+        return response.data
+    
+    except Exception as e:
+        logger.error(f"Error fetching monthly progress for user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching monthly progress: {str(e)}")
+
+
+@app.post("/api/monthly-progress")
+async def upsert_monthly_progress(
+    progress: MonthlyProgressCreate,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Create or update monthly progress for a specific month
+    
+    Args:
+        progress: Monthly progress data
+        user_id: Authenticated user ID
+    
+    Returns:
+        Updated monthly progress record
+    """
+    try:
+        # Check if record exists
+        existing = supabase.table("monthly_progress").select("*").eq("user_id", user_id).eq("year", progress.year).eq("month", progress.month).execute()
+        
+        progress_data = {
+            "user_id": user_id,
+            "year": progress.year,
+            "month": progress.month,
+            "completed_tasks": progress.completed_tasks,
+            "max_streak_days": progress.max_streak_days,
+            "streak_score": progress.streak_score,
+            "raw_score": progress.raw_score,
+            "normalized_score": progress.normalized_score,
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        if existing.data:
+            # Update existing record
+            response = supabase.table("monthly_progress").update(progress_data).eq("user_id", user_id).eq("year", progress.year).eq("month", progress.month).execute()
+        else:
+            # Create new record
+            response = supabase.table("monthly_progress").insert(progress_data).execute()
+        
+        if response.data:
+            return response.data[0]
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save monthly progress")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving monthly progress for user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving monthly progress: {str(e)}")
+
+
+@app.post("/api/monthly-progress/recalculate/{year}")
+async def recalculate_monthly_progress(
+    year: int,
+    user_id: str = Depends(verify_clerk_token)
+):
+    """
+    Recalculate and store monthly progress for an entire year
+    This endpoint does all the heavy lifting to compute metrics
+    
+    Args:
+        year: Year to recalculate (e.g., 2025)
+        user_id: Authenticated user ID
+    
+    Returns:
+        List of calculated monthly progress for all 12 months
+    """
+    try:
+        from datetime import date as dt_date
+        
+        # Get all tasks for the year
+        tasks_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).execute()
+        all_tasks = tasks_response.data if tasks_response.data else []
+        
+        # Get all habit completions for the year
+        first_day = dt_date(year, 1, 1)
+        last_day = dt_date(year + 1, 1, 1)
+        completions_response = supabase.table("habit_completions").select("*").eq("user_id", user_id).gte("completion_date", first_day.isoformat()).lt("completion_date", last_day.isoformat()).execute()
+        year_completions = completions_response.data if completions_response.data else []
+        
+        # Pre-process data by month
+        completed_tasks_by_month = {}
+        completions_by_month = {}
+        
+        for month in range(1, 13):
+            completed_tasks_by_month[month] = 0
+            completions_by_month[month] = []
+        
+        # Process tasks
+        for task in all_tasks:
+            if task.get('status') == 'COMPLETED':
+                created_at = task.get('created_at')
+                if created_at:
+                    task_date = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    if task_date.year == year:
+                        month = task_date.month
+                        completed_tasks_by_month[month] += 1
+        
+        # Process habit completions
+        for completion in year_completions:
+            completion_date = completion.get('completion_date')
+            if completion_date:
+                comp_date = datetime.fromisoformat(completion_date).date()
+                if comp_date.year == year:
+                    month = comp_date.month
+                    completions_by_month[month].append(completion)
+        
+        # Calculate metrics for each month
+        alpha = 0.75
+        max_expected = 200
+        results = []
+        
+        for month in range(1, 13):
+            completed_tasks = completed_tasks_by_month[month]
+            month_completions = completions_by_month[month]
+            
+            # Calculate max streak for this month
+            day_counts = {}
+            for completion in month_completions:
+                comp_date = completion.get('completion_date')
+                if comp_date:
+                    day_counts[comp_date] = day_counts.get(comp_date, 0) + 1
+            
+            max_streak = 0
+            current_streak = 0
+            days_in_month = (dt_date(year, month + 1, 1) - dt_date(year, month, 1)).days if month < 12 else 31
+            
+            for day in range(1, days_in_month + 1):
+                date_str = f"{year}-{month:02d}-{day:02d}"
+                if day_counts.get(date_str, 0) > 0:
+                    current_streak += 1
+                    max_streak = max(max_streak, current_streak)
+                else:
+                    current_streak = 0
+            
+            streak_score = alpha * max_streak
+            raw_score = completed_tasks + streak_score
+            normalized_score = min((raw_score / max_expected) * 100, 100)
+            
+            # Check if future month
+            now = datetime.now()
+            is_future = (year > now.year) or (year == now.year and month > now.month)
+            
+            if is_future:
+                completed_tasks = 0
+                max_streak = 0
+                streak_score = 0.0
+                raw_score = 0.0
+                normalized_score = 0.0
+            
+            # Upsert to database
+            progress_data = {
+                "year": year,
+                "month": month,
+                "completed_tasks": completed_tasks,
+                "max_streak_days": max_streak,
+                "streak_score": streak_score,
+                "raw_score": raw_score,
+                "normalized_score": normalized_score
+            }
+            
+            response = await upsert_monthly_progress(MonthlyProgressCreate(**progress_data), user_id)
+            results.append(response)
+        
+        return results
+    
+    except Exception as e:
+        logger.error(f"Error recalculating monthly progress for user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error recalculating monthly progress: {str(e)}")
 
 
 # ============= DEADLINES ENDPOINTS =============

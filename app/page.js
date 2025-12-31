@@ -15,7 +15,7 @@ export default function LoginPage() {
       // Check if user has completed onboarding
       const hasCompletedOnboarding = localStorage.getItem('onboarding_completed')
       if (hasCompletedOnboarding === 'true') {
-        router.push('/dashboard')
+        router.push('/habits')
       } else {
         router.push('/onboarding')
       }
