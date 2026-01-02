@@ -18,7 +18,9 @@ RUN apt-get update \
     && apt-get clean
 
 # Copy application code
-COPY debug-health.py main.py requirements.txt .
+COPY debug-health.py .
+COPY main.py .
+COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
