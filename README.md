@@ -400,3 +400,4 @@ For issues or questions:
 ---
 
 Built with ❤️ using FastAPI, Next.js, Clerk, and Supabase
+# Trigger redeploy for webhook secret fix
