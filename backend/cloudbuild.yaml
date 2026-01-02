@@ -25,7 +25,7 @@ steps:
       - '--timeout=300'
       - '--concurrency=1000'
       - '--max-instances=100'
-      - '--set-env-vars=PORT=8080'
+      - '--set-env-vars=PORT=8080,SUPABASE_URL=https://bqwkekylncfqzyiltqgj.supabase.co,SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxd2tla3lsbmNmcXp5aWx0cWdqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjgyNTk1OSwiZXhwIjoyMDgyNDAxOTU5fQ.vQuIfROhA3IVRai5r60dlyIolvolhnvAYPjNuxNzzzs,CLERK_SECRET_KEY=sk_test_dfRQtImnhItpqZ0nGHq4WgIgI4tHd4jamgvfrBLf5o,GEMINI_API_KEY=AIzaSyCvKXoV7QdTbGP94V3BjlqfYYG-u_fPT38,DODO_WEBHOOK_SECRET=whsec_MGvIckoTy49do+Dts48apq40ouE4oAjl,DODO_PRODUCT_ID=pdt_0NVJ8D4w4vPUkPNW1m392,FRONTEND_URL=https://escapematrix-app.vercel.app/,ENVIRONMENT=production'
 
 # Configure the image
 images:
