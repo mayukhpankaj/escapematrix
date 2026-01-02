@@ -35,13 +35,11 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: https://escapematrix.onrender.com
       
-      # DodoPayments
+      # DodoPayments (webhook URL will be auto-detected)
       - key: DODO_API_KEY
         sync: false
       - key: DODO_PRODUCT_ID
         sync: false
-      - key: DODO_WEBHOOK_URL
-        value: https://escapematrix.onrender.com/webhooks/dodo
       - key: WEBHOOK_SECRET
         generateValue: true
       

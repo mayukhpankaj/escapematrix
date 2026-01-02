@@ -76,12 +76,16 @@ def get_webhook_url(request: Request = None) -> str:
         # Development mode
         return os.getenv("DODO_WEBHOOK_URL", "http://localhost:8000/webhooks/dodo")
 
+# Initialize webhook URL dynamically (will be updated on first request)
+WEBHOOK_URL = None
 if IS_PRODUCTION:
     WEBHOOK_URL = os.getenv("DODO_WEBHOOK_URL", "https://yourdomain.com/webhooks/dodo")
-    logger.info(f"🚀 Production mode - Webhook URL: {WEBHOOK_URL}")
 else:
     WEBHOOK_URL = os.getenv("DODO_WEBHOOK_URL", "http://localhost:8000/webhooks/dodo")
-    logger.info(f"🧪 Development mode - Webhook URL: {WEBHOOK_URL}")
+
+logger.info(f"🚀 Environment: {ENVIRONMENT}")
+logger.info(f"🌐 Initial Webhook URL: {WEBHOOK_URL}")
+logger.info("🔄 Webhook URL will be auto-detected from requests in production")
 
 # Gemini configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -1542,15 +1546,18 @@ successful_payments = set()
 async def dodo_webhook(request: Request):
     """Handle DodoPayments webhooks"""
     try:
+        # Get dynamic webhook URL for logging
+        current_webhook_url = get_webhook_url(request)
+        
         payload = await request.body()
         signature = request.headers.get("webhook-signature")
         webhook_id = request.headers.get("webhook-id")
         webhook_ts = request.headers.get("webhook-timestamp")
         
-        logger.info(f"Webhook received:")
-        logger.info(f"  Headers: {dict(request.headers)}")
-        logger.info(f"  Signature header: {signature}")
-        logger.info(f"  Payload length: {len(payload)}")
+        logger.info(f"Webhook received at: {current_webhook_url}")
+        logger.info(f"Headers: {dict(request.headers)}")
+        logger.info(f"Signature header: {signature}")
+        logger.info(f"Payload length: {len(payload)}")
 
         # Re-enable signature verification
         if not signature or not webhook_id or not webhook_ts or not verify_signature(payload, webhook_id, webhook_ts, signature):
@@ -1693,6 +1700,43 @@ async def get_webhook_info(request: Request):
         "environment": ENVIRONMENT,
         "is_production": IS_PRODUCTION,
         "instructions": "Use this URL in your DodoPayments webhook configuration"
+    }
+
+
+@app.get("/auto-setup-webhook")
+async def auto_setup_webhook(request: Request):
+    """Automatic webhook setup endpoint"""
+    webhook_url = get_webhook_url(request)
+    
+    return {
+        "status": "ready",
+        "webhook_url": webhook_url,
+        "environment": ENVIRONMENT,
+        "is_production": IS_PRODUCTION,
+        "dodopayments_config": {
+            "webhook_url": webhook_url,
+            "events": ["payment.succeeded", "payment.failed"],
+            "secret": os.getenv("DODO_WEBHOOK_SECRET", "Set your webhook secret in environment variables"),
+            "setup_steps": [
+                "1. Copy the webhook URL above",
+                "2. Go to DodoPayments Dashboard → Webhooks",
+                f"3. Add webhook URL: {webhook_url}",
+                "4. Select events: payment.succeeded, payment.failed",
+                "5. Set webhook secret from your environment variables"
+            ]
+        },
+        "test_endpoint": f"{webhook_url}/test"
+    }
+
+
+@app.post("/webhooks/dodo/test")
+async def test_webhook_endpoint(request: Request):
+    """Test webhook endpoint"""
+    return {
+        "status": "webhook_endpoint_working",
+        "webhook_url": get_webhook_url(request),
+        "timestamp": datetime.now().isoformat(),
+        "message": "Your webhook endpoint is accessible and ready"
     }
 
 

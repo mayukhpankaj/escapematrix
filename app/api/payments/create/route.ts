@@ -11,13 +11,17 @@ const DODO_API_URL = TESTING
 
 const PRODUCT_ID = process.env.DODO_PRODUCT_ID || "pdt_0NVKFpzt1jbHkCXW0gbfK";
 
-// Get webhook URL based on environment
-const getWebhookUrl = () => {
+// Get webhook URL based on environment and request
+const getWebhookUrl = (req: Request) => {
+  const requestUrl = new URL(req.url)
+  const origin = req.headers.get('origin') || requestUrl.origin
+  
   if (IS_PRODUCTION) {
-    return process.env.DODO_WEBHOOK_URL || "https://6a10571f8752.ngrok-free.app/webhooks/dodo";
+    // In production, use the current domain
+    return `${origin}/webhooks/dodo`
   } else {
-    // In development, will be set by ngrok setup
-    return process.env.DODO_WEBHOOK_URL || "https://6a10571f8752.ngrok-free.app/webhooks/dodo";
+    // In development, use environment variable or ngrok
+    return process.env.DODO_WEBHOOK_URL || `${origin}/webhooks/dodo`
   }
 };
 
@@ -66,7 +70,7 @@ export async function POST(req: Request) {
       url: `${DODO_API_URL}/checkouts`,
       apiKey: process.env.DODO_API_KEY?.substring(0, 10) + "...",
       productId: PRODUCT_ID,
-      webhookUrl: getWebhookUrl(),
+      webhookUrl: getWebhookUrl(req),
       user: {
         userId: safeUserId,
         email: safeEmail,

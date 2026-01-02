@@ -51,6 +51,10 @@ const nextConfig = {
         source: '/webhook-info',
         destination: `${backendUrl}/webhook-info`,
       },
+      {
+        source: '/auto-setup-webhook',
+        destination: `${backendUrl}/auto-setup-webhook`,
+      },
     ]
   },
   webpack: (config) => {
