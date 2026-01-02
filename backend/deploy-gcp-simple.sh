@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# Simple Google Cloud Run deployment script (no GitHub integration)
+
+set -e
+
+# Configuration
+PROJECT_ID="your-gcp-project-id"
+REGION="us-central1"
+SERVICE_NAME="escapematrix-backend"
+IMAGE_NAME="escapematrix-backend"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}🚀 Starting Simple Google Cloud Run deployment...${NC}"
+
+# Check if gcloud is installed
+if ! command -v gcloud &> /dev/null; then
+    echo -e "${RED}❌ gcloud CLI not found. Please install it first.${NC}"
+    exit 1
+fi
+
+# Set the project
+echo -e "${YELLOW}📋 Setting project to: $PROJECT_ID${NC}"
+gcloud config set project $PROJECT_ID
+
+# Enable required APIs
+echo -e "${YELLOW}🔧 Enabling required APIs...${NC}"
+gcloud services enable run.googleapis.com
+gcloud services enable cloudbuild.googleapis.com
+gcloud services enable containerregistry.googleapis.com
+
+# Method 1: Using Docker directly (recommended)
+echo -e "${YELLOW}🐳 Building Docker image locally...${NC}"
+docker build -f Dockerfile.gcp -t gcr.io/$PROJECT_ID/$IMAGE_NAME:latest .
+
+echo -e "${YELLOW}📤 Pushing to Container Registry...${NC}"
+docker push gcr.io/$PROJECT_ID/$IMAGE_NAME:latest
+
+# Deploy to Cloud Run
+echo -e "${YELLOW}🚀 Deploying to Cloud Run...${NC}"
+gcloud run deploy $SERVICE_NAME \
+    --image gcr.io/$PROJECT_ID/$IMAGE_NAME:latest \
+    --region $REGION \
+    --platform managed \
+    --allow-unauthenticated \
+    --port 8080 \
+    --memory 512Mi \
+    --cpu 1 \
+    --timeout 300 \
+    --concurrency 1000 \
+    --max-instances 100 \
+    --set-env-vars "PORT=8080"
+
+# Get the service URL
+SERVICE_URL=$(gcloud run services describe $SERVICE_NAME \
+    --region $REGION \
+    --format 'value(status.url)')
+
+echo -e "${GREEN}✅ Deployment successful!${NC}"
+echo -e "${GREEN}🌐 Service URL: $SERVICE_URL${NC}"
+echo -e "${YELLOW}⚠️  Don't forget to update your frontend environment variables:${NC}"
+echo -e "${YELLOW}   NEXT_PUBLIC_BACKEND_URL=$SERVICE_URL${NC}"
+
+# Test the deployment
+echo -e "${YELLOW}🧪 Testing health endpoint...${NC}"
+if curl -f $SERVICE_URL/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Health check passed!${NC}"
+else
+    echo -e "${RED}❌ Health check failed. Please check logs.${NC}"
+fi
+
+echo -e "${GREEN}🎉 Deployment complete!${NC}"

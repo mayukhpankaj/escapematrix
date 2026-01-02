@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# Manual deployment using gcloud builds submit with tarball
+
+set -e
+
+# Configuration
+PROJECT_ID="your-gcp-project-id"
+REGION="us-central1"
+SERVICE_NAME="escapematrix-backend"
+IMAGE_NAME="escapematrix-backend"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}🚀 Starting Manual Google Cloud Run deployment...${NC}"
+
+# Check if gcloud is installed
+if ! command -v gcloud &> /dev/null; then
+    echo -e "${RED}❌ gcloud CLI not found. Please install it first.${NC}"
+    exit 1
+fi
+
+# Set the project
+echo -e "${YELLOW}📋 Setting project to: $PROJECT_ID${NC}"
+gcloud config set project $PROJECT_ID
+
+# Enable required APIs
+echo -e "${YELLOW}🔧 Enabling required APIs...${NC}"
+gcloud services enable run.googleapis.com
+gcloud services enable cloudbuild.googleapis.com
+gcloud services enable containerregistry.googleapis.com
+
+# Create a tarball of the source
+echo -e "${YELLOW}📦 Creating source tarball...${NC}"
+tar -czf source.tar.gz --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' --exclude='venv' --exclude='.env' .
+
+# Upload and build using the tarball
+echo -e "${YELLOW}🏗️  Building from source tarball...${NC}"
+gcloud builds submit --tag gcr.io/$PROJECT_ID/$IMAGE_NAME:latest --timeout=600 source.tar.gz
+
+# Clean up the tarball
+rm -f source.tar.gz
+
+# Deploy to Cloud Run
+echo -e "${YELLOW}🚀 Deploying to Cloud Run...${NC}"
+gcloud run deploy $SERVICE_NAME \
+    --image gcr.io/$PROJECT_ID/$IMAGE_NAME:latest \
+    --region $REGION \
+    --platform managed \
+    --allow-unauthenticated \
+    --port 8080 \
+    --memory 512Mi \
+    --cpu 1 \
+    --timeout 300 \
+    --concurrency 1000 \
+    --max-instances 100 \
+    --set-env-vars "PORT=8080"
+
+# Get the service URL
+SERVICE_URL=$(gcloud run services describe $SERVICE_NAME \
+    --region $REGION \
+    --format 'value(status.url)')
+
+echo -e "${GREEN}✅ Deployment successful!${NC}"
+echo -e "${GREEN}🌐 Service URL: $SERVICE_URL${NC}"
+echo -e "${YELLOW}⚠️  Don't forget to update your frontend environment variables:${NC}"
+echo -e "${YELLOW}   NEXT_PUBLIC_BACKEND_URL=$SERVICE_URL${NC}"
+
+# Test the deployment
+echo -e "${YELLOW}🧪 Testing health endpoint...${NC}"
+if curl -f $SERVICE_URL/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Health check passed!${NC}"
+else
+    echo -e "${RED}❌ Health check failed. Please check logs.${NC}"
+fi
+
+echo -e "${GREEN}🎉 Deployment complete!${NC}"
