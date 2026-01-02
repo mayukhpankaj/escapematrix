@@ -20,7 +20,10 @@ import hmac
 import hashlib
 import base64
 
-load_dotenv()
+# Load environment variables from the backend directory
+from pathlib import Path
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
 
 # Configure logging
 logging.basicConfig(
@@ -28,6 +31,13 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Debug: Check if environment variables are loaded
+logger.info("=== Environment Variables Debug ===")
+logger.info(f"DODO_WEBHOOK_SECRET exists: {'DODO_WEBHOOK_SECRET' in os.environ}")
+logger.info(f"DODO_WEBHOOK_SECRET value: {os.getenv('DODO_WEBHOOK_SECRET', 'NOT_FOUND')}")
+logger.info(f"Current working directory: {os.getcwd()}")
+logger.info("================================")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -60,7 +70,9 @@ CLERK_PEM_PUBLIC_KEY = os.getenv("CLERK_PEM_PUBLIC_KEY", "")
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
 
 # DodoPayments configuration
-DODO_WEBHOOK_SECRET = os.getenv("DODO_WEBHOOK_SECRET")
+WEBHOOK_SECRET = os.getenv("DODO_WEBHOOK_SECRET")
+if not WEBHOOK_SECRET:
+    logger.error("DODO_WEBHOOK_SECRET is not set in environment variables")
 PRODUCT_ID = os.getenv("DODO_PRODUCT_ID", "pdt_0NVKFpzt1jbHkCXW0gbfKs")
 
 # Environment-based webhook configuration
@@ -195,18 +207,18 @@ async def verify_clerk_token(authorization: str = Header(None)) -> str:
 
 def verify_signature(payload: bytes, msg_id: str, timestamp: str, signature_header: str) -> bool:
     """Verify DodoPayments webhook signature"""
-    if not DODO_WEBHOOK_SECRET:
-        logger.error("DODO_WEBHOOK_SECRET is not set")
+    if not WEBHOOK_SECRET:
+        logger.error("WEBHOOK_SECRET is not set")
         return False
 
-    secret = DODO_WEBHOOK_SECRET
+    secret = WEBHOOK_SECRET
     if secret.startswith("whsec_"):
         secret = secret[len("whsec_"):]
 
     try:
         signing_key = base64.b64decode(secret)
     except Exception:
-        signing_key = DODO_WEBHOOK_SECRET.encode()
+        signing_key = WEBHOOK_SECRET.encode()
 
     signed_payload = f"{msg_id}.{timestamp}.".encode() + payload
     expected_b64 = base64.b64encode(
