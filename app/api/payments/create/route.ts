@@ -101,9 +101,10 @@ export async function POST(req: Request) {
 
     
         
-        // 🛠 No phone number field
+        // 🛠 Feature flags - disable phone and discount collection
         feature_flags: {
-          allow_phone_number_collection: false
+          allow_phone_number_collection: false,
+          allow_discount_code: false
         },
 
         // 🛠 Optional: minimal address mode
