@@ -25,6 +25,7 @@ import useUserStore from '@/store/userStore'
 import { preloadHomeData } from '@/utils/dataPreloader'
 import AvatarGuide from '@/components/AvatarGuide'
 import avatarManager from '@/utils/avatarManager'
+import useProGuard from '@/hooks/use-pro-guard'
 
 // Dynamically import emoji picker to avoid SSR issues
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
@@ -76,6 +77,7 @@ export default function HabitsPage() {
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
   const { setUser, fullName } = useUserStore()
+  const { checking } = useProGuard()
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -454,7 +456,7 @@ export default function HabitsPage() {
     }
   }
 
-  if (!isLoaded || !isSignedIn) {
+  if (checking || !isLoaded || !isSignedIn) {
     return null
   }
 

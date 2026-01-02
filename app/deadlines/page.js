@@ -6,9 +6,10 @@ import { useAuth, UserButton, useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { TrendingUp, ListTodo, Target, Zap, Menu, X, Clock, CheckCircle2, AlertCircle, Plus } from 'lucide-react'
+import { TrendingUp, ListTodo, Target, Zap, Menu, X, Clock, CheckCircle2, AlertCircle, Plus, CalendarDays, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
+import useProGuard from '@/hooks/use-pro-guard'
 
 const API_BASE = '/backend-api/api'
 
@@ -120,6 +121,7 @@ export default function DeadlinesPage() {
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
   const { setUser, fullName } = useUserStore()
+  const { checking } = useProGuard()
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -245,7 +247,7 @@ export default function DeadlinesPage() {
 
   const getTimeRemaining = (deadlineTime) => getCountdown(deadlineTime, now)
 
-  if (!isLoaded || !isSignedIn) {
+  if (checking || !isLoaded || !isSignedIn) {
     return null
   }
 

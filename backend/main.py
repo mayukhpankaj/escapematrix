@@ -5,7 +5,7 @@ Handles all API endpoints for task management with Clerk authentication
 import os
 from typing import List, Optional, Literal
 from datetime import datetime, date
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from supabase import create_client, Client
@@ -16,6 +16,9 @@ import json
 import httpx
 import asyncio
 import logging
+import hmac
+import hashlib
+import base64
 
 load_dotenv()
 
@@ -50,6 +53,23 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 # Clerk configuration
 CLERK_PEM_PUBLIC_KEY = os.getenv("CLERK_PEM_PUBLIC_KEY", "")
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
+
+# DodoPayments configuration
+WEBHOOK_SECRET = os.getenv("DODO_WEBHOOK_SECRET")
+PRODUCT_ID = os.getenv("DODO_PRODUCT_ID", "pdt_0NVKFpzt1jbHkCXW0gbfKs")
+
+# Environment-based webhook configuration
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+IS_PRODUCTION = ENVIRONMENT == "production"
+
+if IS_PRODUCTION:
+    # Production webhook URL - hosted backend
+    WEBHOOK_URL = os.getenv("DODO_WEBHOOK_URL", "https://yourdomain.com/webhooks/dodo")
+    logger.info(f"🚀 Production mode - Webhook URL: {WEBHOOK_URL}")
+else:
+    # Development mode - will use ngrok
+    WEBHOOK_URL = os.getenv("DODO_WEBHOOK_URL", "http://localhost:8000/webhooks/dodo")
+    logger.info(f"🧪 Development mode - Webhook URL: {WEBHOOK_URL}")
 
 # Gemini configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -148,6 +168,43 @@ async def verify_clerk_token(authorization: str = Header(None)) -> str:
         raise HTTPException(status_code=401, detail="Invalid token format")
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Token verification failed: {str(e)}")
+
+
+def verify_signature(payload: bytes, msg_id: str, timestamp: str, signature_header: str) -> bool:
+    """Verify DodoPayments webhook signature"""
+    if not WEBHOOK_SECRET:
+        logger.error("WEBHOOK_SECRET is not set")
+        return False
+
+    secret = WEBHOOK_SECRET
+    if secret.startswith("whsec_"):
+        secret = secret[len("whsec_"):]
+
+    try:
+        signing_key = base64.b64decode(secret)
+    except Exception:
+        signing_key = WEBHOOK_SECRET.encode()
+
+    signed_payload = f"{msg_id}.{timestamp}.".encode() + payload
+    expected_b64 = base64.b64encode(
+        hmac.new(signing_key, signed_payload, hashlib.sha256).digest()
+    ).decode()
+
+    candidates: list[str] = []
+    for part in (signature_header or "").split():
+        if part.startswith("v1,"):
+            candidates.append(part[3:])
+        elif part.startswith("sha256="):
+            candidates.append(part[7:])
+        else:
+            candidates.append(part)
+
+    logger.info("Webhook signature verification:")
+    logger.info(f"  Received: {signature_header}")
+    logger.info(f"  Expected: {expected_b64}")
+    logger.info(f"  Match: {any(hmac.compare_digest(expected_b64, c) for c in candidates)}")
+
+    return any(hmac.compare_digest(expected_b64, c) for c in candidates)
 
 
 # API Endpoints
@@ -1464,6 +1521,158 @@ async def delete_deadline(
     except Exception as e:
         logger.error(f"Error deleting deadline {deadline_id} for user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting deadline: {str(e)}")
+
+
+# Store successful payment IDs (in production, use a database)
+successful_payments = set()
+
+@app.post("/webhooks/dodo")
+async def dodo_webhook(request: Request):
+    """Handle DodoPayments webhooks"""
+    try:
+        payload = await request.body()
+        signature = request.headers.get("webhook-signature")
+        webhook_id = request.headers.get("webhook-id")
+        webhook_ts = request.headers.get("webhook-timestamp")
+        
+        logger.info(f"Webhook received:")
+        logger.info(f"  Headers: {dict(request.headers)}")
+        logger.info(f"  Signature header: {signature}")
+        logger.info(f"  Payload length: {len(payload)}")
+
+        # Re-enable signature verification
+        if not signature or not webhook_id or not webhook_ts or not verify_signature(payload, webhook_id, webhook_ts, signature):
+            logger.warning("Invalid webhook signature")
+            raise HTTPException(status_code=400, detail="Invalid signature")
+
+        event = json.loads(payload)
+        logger.info(f"Received DodoPayments webhook: {event['type']}")
+
+        if event["type"] == "payment.succeeded":
+            payment = event["data"]
+            
+            # Extract user details from payment data
+            user_id = payment["metadata"].get("userId")
+            customer_email = payment["customer"].get("email")
+            customer_name = payment["customer"].get("name")
+            customer_phone = payment["customer"].get("phone_number")
+            payment_id = payment.get("payment_id")
+            payment_method = payment.get("payment_method")
+            total_amount = payment.get("total_amount")
+            currency = payment.get("currency")
+            
+            # Extract product details
+            product_cart = payment.get("product_cart", [])
+            product_id = product_cart[0].get("product_id") if product_cart else None
+
+            # Store successful payment ID
+            successful_payments.add(payment_id)
+            logger.info(f"✅ Stored successful payment ID: {payment_id}")
+
+            # Log all user and payment details
+            logger.info(f"✅ Payment succeeded - User details:")
+            logger.info(f"   User ID: {user_id}")
+            logger.info(f"   Email: {customer_email}")
+            logger.info(f"   Name: {customer_name}")
+            logger.info(f"   Phone: {customer_phone}")
+            logger.info(f"   Payment ID: {payment_id}")
+            logger.info(f"   Payment Method: {payment_method}")
+            logger.info(f"   Amount: {total_amount} {currency}")
+            logger.info(f"   Product ID: {product_id}")
+
+            if product_id == PRODUCT_ID:
+                # 🔥 YOUR BUSINESS LOGIC HERE
+                logger.info(f"✅ Grant 1-year access to user {user_id}")
+
+                # Update user's pro status in database
+                try:
+                    logger.info(f"🔍 Attempting to update database for user_id: {user_id}")
+                    logger.info(f"🔍 Supabase URL: {SUPABASE_URL}")
+                    
+                    # Check if user already exists in user_pro_status table
+                    logger.info(f"🔍 Checking if user {user_id} exists in database...")
+                    existing_user = supabase.table("user_pro_status").select("id").eq("user_id", user_id).execute()
+                    logger.info(f"🔍 Existing user query result: {existing_user.data}")
+                    
+                    if existing_user.data:
+                        # Update existing user
+                        logger.info(f"🔍 Updating existing user {user_id}...")
+                        update_result = supabase.table("user_pro_status").update({
+                            "is_pro": True,
+                            "payment_id": payment_id,
+                            "user_name": customer_name,
+                            "user_email": customer_email,
+                            "updated_at": datetime.now().isoformat()
+                        }).eq("user_id", user_id).execute()
+                        logger.info(f"✅ Update result: {update_result.data}")
+                        logger.info(f"✅ Updated existing user {user_id} to pro status")
+                    else:
+                        # Insert new user
+                        logger.info(f"🔍 Inserting new user {user_id}...")
+                        insert_data = {
+                            "user_id": user_id,
+                            "is_pro": True,
+                            "payment_id": payment_id,
+                            "user_name": customer_name,
+                            "user_email": customer_email,
+                            "created_at": datetime.now().isoformat(),
+                            "updated_at": datetime.now().isoformat()
+                        }
+                        logger.info(f"🔍 Insert data: {insert_data}")
+                        insert_result = supabase.table("user_pro_status").insert(insert_data).execute()
+                        logger.info(f"✅ Insert result: {insert_result.data}")
+                        logger.info(f"✅ Inserted new user {user_id} with pro status")
+                    
+                    logger.info(f"✅ User {user_id} upgraded to 1-year pro plan successfully")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Error updating user {user_id} pro status: {str(e)}")
+                    logger.error(f"❌ Exception type: {type(e)}")
+                    import traceback
+                    logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+                    # Continue processing even if database update fails
+
+        elif event["type"] == "payment.failed":
+            payment = event["data"]
+            
+            # Extract user details from failed payment
+            user_id = payment["metadata"].get("userId")
+            customer_email = payment["customer"].get("email")
+            customer_name = payment["customer"].get("name")
+            payment_id = payment.get("payment_id")
+            error_code = payment.get("error_code")
+            error_message = payment.get("error_message")
+            payment_method = payment.get("payment_method")
+            total_amount = payment.get("total_amount")
+            
+            # Log failed payment details
+            logger.warning(f"❌ Payment failed - User details:")
+            logger.warning(f"   User ID: {user_id}")
+            logger.warning(f"   Email: {customer_email}")
+            logger.warning(f"   Name: {customer_name}")
+            logger.warning(f"   Payment ID: {payment_id}")
+            logger.warning(f"   Error Code: {error_code}")
+            logger.warning(f"   Error Message: {error_message}")
+            logger.warning(f"   Payment Method: {payment_method}")
+            logger.warning(f"   Amount: {total_amount}")
+            
+            # Optionally handle failed payments (notify user, etc.)
+
+        return {"status": "ok"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing DodoPayments webhook: {str(e)}")
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
+
+@app.get("/api/payment-status/{payment_id}")
+async def check_payment_status(payment_id: str):
+    """Check if payment was successful via webhook confirmation"""
+    if payment_id in successful_payments:
+        return {"status": "succeeded", "confirmed_by": "webhook"}
+    else:
+        return {"status": "failed", "reason": "no_webhook_confirmation"}
 
 
 if __name__ == "__main__":

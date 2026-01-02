@@ -10,6 +10,7 @@ import useUserStore from '@/store/userStore'
 import { Radar, Bar } from 'react-chartjs-2'
 import AvatarGuide from '@/components/AvatarGuide'
 import avatarManager from '@/utils/avatarManager'
+import useProGuard from '@/hooks/use-pro-guard'
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -78,6 +79,7 @@ export default function HomePage() {
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
   const { setUser, fullName } = useUserStore()
+  const { checking } = useProGuard()
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -509,7 +511,7 @@ export default function HomePage() {
     }
   }, [monthlyData])
 
-  if (!isLoaded || !isSignedIn) {
+  if (checking || !isLoaded || !isSignedIn) {
     return null
   }
 

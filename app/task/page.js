@@ -11,6 +11,7 @@ import TaskDetailModal from '@/components/TaskDetailModal'
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
 import confetti from 'canvas-confetti'
+import useProGuard from '@/hooks/use-pro-guard'
 
 const API_BASE = '/backend-api/api'
 
@@ -27,6 +28,7 @@ export default function TaskPage() {
   const { isSignedIn, isLoaded, getToken } = useAuth()
   const { user } = useUser()
   const { setUser, fullName } = useUserStore()
+  const { checking } = useProGuard()
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -329,7 +331,7 @@ export default function TaskPage() {
     setDragOverColumn(null)
   }
 
-  if (!isLoaded || !isSignedIn) {
+  if (checking || !isLoaded || !isSignedIn) {
     return null
   }
 
