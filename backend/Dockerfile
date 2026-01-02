@@ -17,13 +17,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
 # Copy application code
-COPY . .
+COPY debug-health.py main.py requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir fastapi uvicorn
 
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser \
