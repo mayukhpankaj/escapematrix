@@ -8,7 +8,6 @@ WORKDIR /app/frontend
 COPY package*.json ./
 COPY app/ ./app/
 COPY components/ ./components/
-COPY contexts/ ./contexts/
 COPY hooks/ ./hooks/
 COPY lib/ ./lib/
 COPY store/ ./store/

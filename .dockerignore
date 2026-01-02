@@ -33,6 +33,9 @@ yarn-error.log*
 .next/
 out/
 
+# Empty directories
+contexts/
+
 # IDE
 .vscode/
 .idea/
