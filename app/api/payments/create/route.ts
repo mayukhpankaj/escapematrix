@@ -7,7 +7,7 @@ const TESTING = !IS_PRODUCTION; // Testing mode in development
 
 const DODO_API_URL = TESTING 
   ? "https://test.dodopayments.com" 
-  : "https://api.dodopayments.com";
+  : "https://live.dodopayments.com";
 
 const PRODUCT_ID = process.env.DODO_PRODUCT_ID || "pdt_0NVKFpzt1jbHkCXW0gbfK";
 

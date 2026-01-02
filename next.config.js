@@ -31,10 +31,25 @@ const nextConfig = {
     ],
   },
   async rewrites() {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const backendUrl = isDevelopment ? 'http://localhost:8000' : 'http://localhost:8000';
+    
     return [
       {
-        source: '/backend-api/:path*',
-        destination: 'http://localhost:8000/:path*',
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+      {
+        source: '/webhooks/:path*',
+        destination: `${backendUrl}/webhooks/:path*`,
+      },
+      {
+        source: '/health',
+        destination: `${backendUrl}/health`,
+      },
+      {
+        source: '/webhook-info',
+        destination: `${backendUrl}/webhook-info`,
       },
     ]
   },

@@ -62,12 +62,24 @@ PRODUCT_ID = os.getenv("DODO_PRODUCT_ID", "pdt_0NVKFpzt1jbHkCXW0gbfKs")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
 IS_PRODUCTION = ENVIRONMENT == "production"
 
+def get_webhook_url(request: Request = None) -> str:
+    """Dynamically generate webhook URL based on deployment"""
+    if IS_PRODUCTION and request:
+        # Use the request host to construct webhook URL
+        scheme = "https" if request.url.scheme == "https" else "http"
+        host = request.headers.get("host", "localhost:8000")
+        return f"{scheme}://{host}/webhooks/dodo"
+    elif IS_PRODUCTION:
+        # Fallback to environment variable or default
+        return os.getenv("DODO_WEBHOOK_URL", "https://yourdomain.com/webhooks/dodo")
+    else:
+        # Development mode
+        return os.getenv("DODO_WEBHOOK_URL", "http://localhost:8000/webhooks/dodo")
+
 if IS_PRODUCTION:
-    # Production webhook URL - hosted backend
     WEBHOOK_URL = os.getenv("DODO_WEBHOOK_URL", "https://yourdomain.com/webhooks/dodo")
     logger.info(f"🚀 Production mode - Webhook URL: {WEBHOOK_URL}")
 else:
-    # Development mode - will use ngrok
     WEBHOOK_URL = os.getenv("DODO_WEBHOOK_URL", "http://localhost:8000/webhooks/dodo")
     logger.info(f"🧪 Development mode - Webhook URL: {WEBHOOK_URL}")
 
@@ -1665,6 +1677,24 @@ async def dodo_webhook(request: Request):
     except Exception as e:
         logger.error(f"Error processing DodoPayments webhook: {str(e)}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for deployment monitoring"""
+    return {"status": "healthy", "service": "Escape Matrix API"}
+
+
+@app.get("/webhook-info")
+async def get_webhook_info(request: Request):
+    """Get current webhook URL for setup purposes"""
+    webhook_url = get_webhook_url(request)
+    return {
+        "webhook_url": webhook_url,
+        "environment": ENVIRONMENT,
+        "is_production": IS_PRODUCTION,
+        "instructions": "Use this URL in your DodoPayments webhook configuration"
+    }
+
 
 @app.get("/api/payment-status/{payment_id}")
 async def check_payment_status(payment_id: str):

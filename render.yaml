@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: escapematrix
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: ENVIRONMENT
+        value: production
+      
+      # Clerk Authentication
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      
+      # Supabase Database
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      
+      # FastAPI Backend URLs (internal)
+      - key: FASTAPI_URL
+        value: http://localhost:8000
+      - key: NEXT_PUBLIC_API_URL
+        value: https://escapematrix.onrender.com
+      
+      # DodoPayments
+      - key: DODO_API_KEY
+        sync: false
+      - key: DODO_PRODUCT_ID
+        sync: false
+      - key: DODO_WEBHOOK_URL
+        value: https://escapematrix.onrender.com/webhooks/dodo
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      
+      # Gemini API
+      - key: GEMINI_API_KEY
+        sync: false
+      
+      # Next.js
+      - key: NEXT_PUBLIC_BASE_URL
+        value: https://escapematrix.onrender.com
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://escapematrix.onrender.com
+    
+    healthCheckPath: /
+    autoDeploy: true
