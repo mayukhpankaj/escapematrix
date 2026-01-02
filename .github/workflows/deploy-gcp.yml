@@ -59,7 +59,8 @@ jobs:
           --set-env-vars "DODO_WEBHOOK_SECRET=${{ secrets.DODO_WEBHOOK_SECRET }}" \
           --set-env-vars "DODO_PRODUCT_ID=${{ secrets.DODO_PRODUCT_ID }}" \
           --set-env-vars "DODO_WEBHOOK_URL=${{ secrets.DODO_WEBHOOK_URL }}" \
-          --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
+          --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" \
+          --set-env-vars "ENVIRONMENT=production"
 
     - name: Get service URL
       id: 'service-url'
