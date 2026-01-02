@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { Suspense } from 'react';
 
-export default function SuccessPage() {
+function SuccessPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isTestMode, setIsTestMode] = useState(false);
@@ -174,5 +175,13 @@ export default function SuccessPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center"><div>Loading...</div></div>}>
+      <SuccessPageContent />
+    </Suspense>
   );
 }

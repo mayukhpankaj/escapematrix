@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { Suspense } from 'react';
 
-export default function ProcessingPage() {
+function ProcessingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('processing');
@@ -167,5 +168,13 @@ export default function ProcessingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProcessingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center"><div>Loading...</div></div>}>
+      <ProcessingPageContent />
+    </Suspense>
   );
 }

@@ -4,6 +4,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_BACKEND_URL": "https://your-railway-app-url.up.railway.app"
+    "NEXT_PUBLIC_BACKEND_URL": "https://escapematrixapp-476326688061.asia-south1.run.app"
   }
 }
