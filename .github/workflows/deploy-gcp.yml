@@ -1,0 +1,76 @@
+name: Deploy Backend to Google Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Google Auth
+      id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        version: 'latest'
+
+    - name: Configure Docker to use gcloud as a credential helper
+      run: gcloud auth configure-docker
+
+    - name: Build and push Docker image
+      run: |
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/escapematrix-backend:${{ github.sha }} ./backend
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/escapematrix-backend:${{ github.sha }}
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy escapematrix-backend \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/escapematrix-backend:${{ github.sha }} \
+          --region ${{ secrets.GCP_REGION || 'us-central1' }} \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 8080 \
+          --memory 512Mi \
+          --cpu 1 \
+          --timeout 300 \
+          --concurrency 1000 \
+          --max-instances 100 \
+          --set-env-vars "PORT=8080" \
+          --set-env-vars "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
+          --set-env-vars "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" \
+          --set-env-vars "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" \
+          --set-env-vars "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+          --set-env-vars "CLERK_PEM_PUBLIC_KEY=${{ secrets.CLERK_PEM_PUBLIC_KEY }}" \
+          --set-env-vars "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" \
+          --set-env-vars "DODO_WEBHOOK_SECRET=${{ secrets.DODO_WEBHOOK_SECRET }}" \
+          --set-env-vars "DODO_PRODUCT_ID=${{ secrets.DODO_PRODUCT_ID }}" \
+          --set-env-vars "DODO_WEBHOOK_URL=${{ secrets.DODO_WEBHOOK_URL }}" \
+          --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
+
+    - name: Get service URL
+      id: 'service-url'
+      run: |
+        SERVICE_URL=$(gcloud run services describe escapematrix-backend \
+          --region ${{ secrets.GCP_REGION || 'us-central1' }} \
+          --format 'value(status.url)')
+        echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+
+    - name: Display service URL
+      run: |
+        echo "🚀 Backend deployed successfully!"
+        echo "🌐 Service URL: ${{ steps.service-url.outputs.url }}"
+        echo "⚠️  Update your frontend NEXT_PUBLIC_BACKEND_URL to this URL"

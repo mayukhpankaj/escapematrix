@@ -1,10 +1,10 @@
-# Cloud Build configuration for deploying to Cloud Run
+# Cloud Build configuration for GitHub trigger deployment
 steps:
-  # Build the Docker image
+  # Build the Docker image from backend directory
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'Dockerfile.gcp', '-t', 'gcr.io/$PROJECT_ID/escapematrix-backend:$COMMIT_SHA', '.']
+    args: ['build', '-f', 'backend/Dockerfile', '-t', 'gcr.io/$PROJECT_ID/escapematrix-backend:$COMMIT_SHA', '.']
   
-  # Push the Docker image to Container Registry
+  # Push the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/escapematrix-backend:$COMMIT_SHA']
   
@@ -25,12 +25,12 @@ steps:
       - '--timeout=300'
       - '--concurrency=1000'
       - '--max-instances=100'
+      - '--set-env-vars=PORT=8080'
 
-# Configure the image to be built
+# Configure the image
 images:
   - 'gcr.io/$PROJECT_ID/escapematrix-backend:$COMMIT_SHA'
 
-# Set up automatic triggers
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: 'E2_HIGHCPU_8'
