@@ -1,5 +1,5 @@
 // Utility for preloading home data in background
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 // Simple in-memory cache for 30 seconds
 const cache = new Map()

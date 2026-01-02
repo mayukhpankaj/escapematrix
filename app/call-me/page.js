@@ -8,7 +8,7 @@ import { Menu, X, ListTodo, Target, Phone, Loader2, CalendarDays, Zap, TrendingU
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 export default function CallMePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)

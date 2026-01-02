@@ -13,7 +13,7 @@ import useUserStore from '@/store/userStore'
 import confetti from 'canvas-confetti'
 import useProGuard from '@/hooks/use-pro-guard'
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState({ 'TO-DO': [], 'IN-PROGRESS': [], 'COMPLETED': [] })

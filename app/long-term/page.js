@@ -10,7 +10,7 @@ import TaskFormModal from '@/components/TaskFormModal'
 import Image from 'next/image'
 import useUserStore from '@/store/userStore'
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 export default function LongTermPage() {
   const [tasks, setTasks] = useState([])

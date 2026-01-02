@@ -11,7 +11,7 @@ import Image from 'next/image'
 import useUserStore from '@/store/userStore'
 import useProGuard from '@/hooks/use-pro-guard'
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 const PRIORITY_COLORS = {
   'LOW': { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },

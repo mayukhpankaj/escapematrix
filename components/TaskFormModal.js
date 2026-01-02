@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { X } from 'lucide-react'
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 export default function TaskFormModal({ onClose, onTaskCreated }) {

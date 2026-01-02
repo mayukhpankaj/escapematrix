@@ -15,7 +15,7 @@ import '@mdxeditor/editor/style.css'
 // Try importing BlockTypeSelect separately
 // import { BlockTypeSelect } from '@mdxeditor/editor/ui/BlockTypeSelect'
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete }) {
   const [markdown, setMarkdown] = useState('')

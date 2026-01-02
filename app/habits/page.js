@@ -42,7 +42,7 @@ ChartJS.register(
   Filler
 )
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 // Color palette for habits
 const HABIT_COLORS = [

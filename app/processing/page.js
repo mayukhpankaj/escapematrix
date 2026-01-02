@@ -45,7 +45,7 @@ function ProcessingPageContent() {
   const checkPaymentStatus = async (paymentId, userId) => {
     try {
       console.log(`Checking webhook status for payment: ${paymentId}`);
-      const response = await fetch(`http://localhost:8000/api/payment-status/${paymentId}`);
+      const response = await fetch(`/api/payment-status/${paymentId}`);
       const data = await response.json();
       
       console.log('Webhook status response:', data);

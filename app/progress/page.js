@@ -26,7 +26,7 @@ import {
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement)
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 // Simple in-memory cache for 30 seconds
 const cache = new Map()

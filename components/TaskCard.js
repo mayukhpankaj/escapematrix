@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const API_BASE = '/backend-api/api'
+const API_BASE = '/api'
 
 const priorityColors = {
   'URGENT-IMPORTANT': 'bg-red-100 text-red-800',

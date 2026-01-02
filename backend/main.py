@@ -60,7 +60,7 @@ CLERK_PEM_PUBLIC_KEY = os.getenv("CLERK_PEM_PUBLIC_KEY", "")
 CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
 
 # DodoPayments configuration
-WEBHOOK_SECRET = os.getenv("DODO_WEBHOOK_SECRET")
+DODO_WEBHOOK_SECRET = os.getenv("DODO_WEBHOOK_SECRET")
 PRODUCT_ID = os.getenv("DODO_PRODUCT_ID", "pdt_0NVKFpzt1jbHkCXW0gbfKs")
 
 # Environment-based webhook configuration
@@ -195,18 +195,18 @@ async def verify_clerk_token(authorization: str = Header(None)) -> str:
 
 def verify_signature(payload: bytes, msg_id: str, timestamp: str, signature_header: str) -> bool:
     """Verify DodoPayments webhook signature"""
-    if not WEBHOOK_SECRET:
-        logger.error("WEBHOOK_SECRET is not set")
+    if not DODO_WEBHOOK_SECRET:
+        logger.error("DODO_WEBHOOK_SECRET is not set")
         return False
 
-    secret = WEBHOOK_SECRET
+    secret = DODO_WEBHOOK_SECRET
     if secret.startswith("whsec_"):
         secret = secret[len("whsec_"):]
 
     try:
         signing_key = base64.b64decode(secret)
     except Exception:
-        signing_key = WEBHOOK_SECRET.encode()
+        signing_key = DODO_WEBHOOK_SECRET.encode()
 
     signed_payload = f"{msg_id}.{timestamp}.".encode() + payload
     expected_b64 = base64.b64encode(
