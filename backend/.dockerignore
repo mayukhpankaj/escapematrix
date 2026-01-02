@@ -50,3 +50,25 @@ Thumbs.db
 # Test files
 test_*.py
 *_test.py
+
+# Cache
+.cache/
+*.cache
+
+# Documentation
+*.md
+docs/
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Railway specific
+railway.json
+nixpacks.toml
