@@ -111,16 +111,16 @@ export default function LoginPage() {
             <div className="space-y-4">
               {/* <p className="text-sm uppercase tracking-[0.65em] text-white/70">Welcome back</p> */}
               <h1 className="text-4xl sm:text-[46px] font-semibold leading-tight">
-                Execute with clarity.<br />Scale habits that win quarters.
+                Conquer 2026<br />Execute with clarity.
               </h1>
        
             </div>
           </div>
 
           <div className="hidden lg:flex gap-6 text-sm text-white/80 uppercase tracking-[0.4em]">
-            <span>Trusted teams</span>
-            <span>Security first</span>
-            <span>Global support</span>
+            <span>Plan</span>
+            <span>Act</span>
+            <span>Achieve</span>
           </div>
         </div>
 
