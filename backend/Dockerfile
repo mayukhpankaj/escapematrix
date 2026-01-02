@@ -1,17 +1,17 @@
-# Ultra-simple FastAPI Dockerfile
+# FastAPI Backend Dockerfile for Google Cloud Run
 FROM python:3.11-slim
 
 WORKDIR /app
 
 # Install dependencies
 COPY requirements.txt .
-RUN pip install fastapi uvicorn
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app
-COPY debug-health.py .
+COPY . .
 
 # Expose port
 EXPOSE 8080
 
 # Run app
-CMD ["uvicorn", "debug-health:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

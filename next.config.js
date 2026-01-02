@@ -32,7 +32,7 @@ const nextConfig = {
   },
   async rewrites() {
     const isDevelopment = process.env.NODE_ENV === 'development';
-    const backendUrl = isDevelopment ? 'http://localhost:8000' : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://your-railway-app-url.up.railway.app';
+    const backendUrl = isDevelopment ? 'http://localhost:8000' : 'https://escapematrixapp-476326688061.asia-south1.run.app';
     
     return [
       {
