@@ -1,0 +1,34 @@
+# Cloud Build configuration for health check deployment
+steps:
+  # Build the Docker image from backend directory
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'backend/Dockerfile.health', '-t', 'gcr.io/$PROJECT_ID/escapematrix-health:$COMMIT_SHA', '.']
+  
+  # Push the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/escapematrix-health:$COMMIT_SHA']
+  
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'escapematrix-health'
+      - '--image=gcr.io/$PROJECT_ID/escapematrix-health:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=256Mi'
+      - '--cpu=1'
+      - '--timeout=60'
+      - '--set-env-vars=PORT=8080'
+
+# Configure the image
+images:
+  - 'gcr.io/$PROJECT_ID/escapematrix-health:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'

@@ -49,7 +49,11 @@ app.add_middleware(
 # Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    logger.warning("Supabase credentials not found - database features will be limited")
+    supabase = None
+else:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 # Clerk configuration
 CLERK_PEM_PUBLIC_KEY = os.getenv("CLERK_PEM_PUBLIC_KEY", "")
@@ -88,13 +92,15 @@ logger.info(f"🚀 Environment: {ENVIRONMENT}")
 logger.info(f"🌐 Initial Webhook URL: {WEBHOOK_URL}")
 logger.info("🔄 Webhook URL will be auto-detected from requests in production")
 
-# Gemini configuration
+# Gemini configuration - lazy initialization
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY is not set in environment variables")
 
-# Configure Google Generative AI
-genai.configure(api_key=GEMINI_API_KEY)
+def get_gemini_model():
+    """Initialize Gemini model only when needed"""
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is not set in environment variables")
+    genai.configure(api_key=GEMINI_API_KEY)
+    return genai.GenerativeModel('gemini-pro')
 
 
 # Pydantic Models
@@ -1739,6 +1745,18 @@ async def test_webhook_endpoint(request: Request):
         "timestamp": datetime.now().isoformat(),
         "message": "Your webhook endpoint is accessible and ready"
     }
+
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Simple health check endpoint"""
+    return {"status": "healthy", "service": "escapematrix-backend"}
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {"message": "Escape Matrix API", "version": "1.0.0"}
 
 
 @app.get("/api/payment-status/{payment_id}")
