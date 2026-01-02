@@ -65,19 +65,18 @@ function CancelPageContent() {
 
         {/* Reassurance */}
         <div className="bg-white rounded-lg p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Still interested in Pro?</h2>
+          <h1 className="text-lg font-semibold text-gray-900 mb-4">Dont want to Escape the Matrix ?</h1>
           <div className="space-y-3 text-left text-gray-700">
             <div className="flex items-center">
               <svg className="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-sm">30-day money-back guarantee</span>
+              <span className="text-sm">change your life</span>
             </div>
             <div className="flex items-center">
               <svg className="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-sm">Secure payment processing</span>
             </div>
             <div className="flex items-center">
               <svg className="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,19 +93,14 @@ function CancelPageContent() {
             onClick={() => router.push('/pro')}
             className="w-full px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
-            Try Again
+            Retry Payment
           </button>
-          <button 
-            onClick={() => router.push('/habits')}
-            className="w-full px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            Continue with Free Plan
-          </button>
+
         </div>
 
         {/* Help Text */}
         <div className="mt-8 text-sm text-gray-500">
-          Questions? Contact us at support@escapematrix.com
+          Questions? Contact us at founder@deeptrue.ai
         </div>
       </div>
     </div>

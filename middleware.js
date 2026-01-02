@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   '/auto-setup-webhook',
   '/success',
   '/cancel',
+  '/processing',
   '/call-me',
   '/deadlines',
   '/habits',
