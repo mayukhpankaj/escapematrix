@@ -858,7 +858,6 @@ Each task object must have:
 
 
 
-
 @app.post("/api/make-call")
 async def make_call(
     request_data: dict,
@@ -902,16 +901,12 @@ async def make_call(
         retell_api_key = "key_18067d4c14f5953706d59c185f90"
         retell_url = "https://api.retellai.com/v2/create-phone-call"
         
-        # Prepare Retell AI request - CORRECTED FORMAT
+        # Prepare Retell AI request - CORRECTED: Use retell_llm_dynamic_variables
         retell_payload = {
             "from_number": "+918071387392",
             "to_number": "+919024175580",
             "agent_id": "agent_7643fe36677ac912003811b209",
-            "metadata": {
-                "user_name": user_name,
-                "task_list": task_text
-            },
-            "dynamic_variables": {
+            "retell_llm_dynamic_variables": {
                 "user_name": user_name,
                 "task_list": task_text
             }
@@ -962,8 +957,6 @@ async def make_call(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error initiating call: {str(e)}")
-
-
 
 
 
