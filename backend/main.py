@@ -876,6 +876,8 @@ async def make_call(
         # Get user name from request body, fallback to user_id if not provided
         user_name = request_data.get("user_name", user_id)
         user_name = str(user_name)
+
+        
         
         # Get all short-term tasks for the user (only these have daily repetition)
         tasks_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
@@ -900,6 +902,8 @@ async def make_call(
         
         task_text = "\n".join(task_lines)
         task_text = str(task_text)
+
+        logger.info(f"User: {user_name}, Tasks: {task_text}")
         
         # Retell AI configuration
         retell_api_key = "key_18067d4c14f5953706d59c185f90"

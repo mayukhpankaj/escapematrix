@@ -125,7 +125,7 @@ export default function ProPage() {
             <div className="space-y-4">
               <BuyButton />
               <p className="text-sm text-slate-500">
-                Secure checkout powered by DodoPayments · AI stats
+                Secure Checkout
               </p>
             </div>
           </div>
