@@ -66,7 +66,7 @@ export default function ProPage() {
   return (
     <div className="relative min-h-screen bg-slate-950 text-white overflow-hidden">
       <Image
-        src="/bg/image.png"
+        src="https://res.cloudinary.com/dp8k9xyhd/image/upload/image_uskrne.png"
         alt="Hero background"
         fill
         priority

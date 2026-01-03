@@ -136,7 +136,7 @@ export default function OnboardingPage() {
 
       <div className="relative flex-1 overflow-hidden">
         <Image
-          src="/bg/image.png"
+          src="https://res.cloudinary.com/dp8k9xyhd/image/upload/image_uskrne.png"
           alt="Modern workspace"
           fill
           priority

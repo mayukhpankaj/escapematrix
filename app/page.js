@@ -88,7 +88,7 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen bg-slate-950">
       <Image
-        src="/bg/image.png"
+        src="https://res.cloudinary.com/dp8k9xyhd/image/upload/v1767441563/escapematrix_web.png"
         alt="Modern workspace"
         fill
         priority

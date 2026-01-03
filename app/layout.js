@@ -7,7 +7,7 @@ export const metadata = {
   openGraph: {
     title: 'Escape Matrix - Habit Tracker',
     description: 'Track your habits and escape the matrix',
-    image: '/og-image.png',
+    image: 'https://res.cloudinary.com/dp8k9xyhd/image/upload/v1767441563/escapematrix_web.png',
     type: 'website',
     url: 'https://escapematrix-app.vercel.app',
     site_name: 'Escape Matrix',
@@ -16,7 +16,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'Escape Matrix - Habit Tracker',
     description: 'Track your habits and escape the matrix',
-    image: '/og-image.png',
+    image: 'https://res.cloudinary.com/dp8k9xyhd/image/upload/v1767441563/escapematrix_web.png',
     site: '@escapematrix_ai',
   },
   other: {
