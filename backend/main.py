@@ -856,7 +856,6 @@ Each task object must have:
             detail=f"An unexpected error occurred. Please try again later."
         )
 
-
 @app.post("/api/make-call")
 async def make_call(
     request_data: dict,
@@ -864,22 +863,13 @@ async def make_call(
 ):
     """
     Initiate a phone call via Retell AI with pending and in-progress tasks
-    
-    Args:
-        request_data: Dictionary containing optional 'user_name' field
-        user_id: Authenticated user ID
-    
-    Returns:
-        Call initiation response
     """
     try:
         # Get user name from request body, fallback to user_id if not provided
         user_name = request_data.get("user_name", user_id)
         user_name = str(user_name)
-
         
-        
-        # Get all short-term tasks for the user (only these have daily repetition)
+        # Get all short-term tasks for the user
         tasks_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
         
         all_tasks = tasks_response.data if tasks_response.data else []
@@ -891,18 +881,18 @@ async def make_call(
         ]
         
         if not pending_tasks:
-            raise HTTPException(status_code=400, detail="No pending or in-progress tasks found")
+            # Create a message for when there are no tasks
+            task_text = "No pending tasks - Great job staying on top of everything!"
+        else:
+            # Format tasks into LLM-friendly text
+            task_lines = []
+            for task in pending_tasks:
+                task_lines.append(
+                    f"- {task.get('task_name')} ({task.get('status')}): {task.get('task_description')}"
+                )
+            task_text = "\n".join(task_lines)
         
-        # Format tasks into LLM-friendly text
-        task_lines = []
-        for task in pending_tasks:
-            task_lines.append(
-                f"- {task.get('task_name')} ({task.get('status')}): {task.get('task_description')}"
-            )
-        
-        task_text = "\n".join(task_lines)
         task_text = str(task_text)
-
         logger.info(f"User: {user_name}, Tasks: {task_text}")
         
         # Retell AI configuration
@@ -914,13 +904,19 @@ async def make_call(
             "from_number": "+918071387392",
             "to_number": "+919024175580",
             "agent_id": "agent_7643fe36677ac912003811b209",
-            "dynamic_variables": {
-                "user_name": user_name,
-                "task_list": task_text
-            }
+            "dynamic_variables": [
+                {
+                    "name": "user_name",
+                    "value": user_name
+                },
+                {
+                    "name": "task_list", 
+                    "value": task_text
+                }
+            ]
         }
         
-        # Log the payload being sent to Retell AI
+        # Log the payload
         print("=" * 80)
         print("RETELL AI CALL PAYLOAD:")
         print(json.dumps(retell_payload, indent=2))
@@ -938,7 +934,7 @@ async def make_call(
                 timeout=30.0
             )
             
-            if retell_response.status_code != 200 and retell_response.status_code != 201:
+            if retell_response.status_code not in [200, 201]:
                 error_detail = retell_response.text
                 try:
                     error_json = retell_response.json()
@@ -957,7 +953,7 @@ async def make_call(
                 "success": True,
                 "message": "Call initiated successfully",
                 "call_id": result.get("call_id"),
-                "tasks_count": len(pending_tasks),
+                "tasks_count": len(pending_tasks) if pending_tasks else 0,
                 "retell_response": result
             }
     
@@ -965,7 +961,6 @@ async def make_call(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error initiating call: {str(e)}")
-
 
 # ============= DAILY HABITS ENDPOINTS =============
 
