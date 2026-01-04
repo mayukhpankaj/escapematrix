@@ -926,6 +926,24 @@ async def make_call(
         task_text = str(task_text)
         logger.info(f"User: {user_name}, Tasks: {task_text}")
         
+        # Get user habits
+        try:
+            habits_response = supabase.table("daily_habits").select("*").eq("user_id", user_id).order("display_order", desc=False).execute()
+            habits = habits_response.data if habits_response.data else []
+            
+            if habits:
+                habit_lines = []
+                for i, habit in enumerate(habits, 1):
+                    habit_lines.append(f"{i}. {habit.get('habit_name')}")
+                habit_text = "\n".join(habit_lines)
+            else:
+                habit_text = "No habits created yet"
+        except Exception as e:
+            logger.error(f"Error fetching habits: {str(e)}")
+            habit_text = "Error fetching habits"
+        
+        logger.info(f"User: {user_name}, Habits: {habit_text}")
+        
         # Retell AI configuration
         retell_api_key = "key_18067d4c14f5953706d59c185f90"
         retell_url = "https://api.retellai.com/v2/create-phone-call"
@@ -938,7 +956,8 @@ async def make_call(
             "retell_llm_dynamic_variables": {
                 "user_id": user_id,
                 "user_name": user_name,
-                "task_list": task_text
+                "task_list": task_text,
+                "habit_list": habit_text
             }
         }
         
