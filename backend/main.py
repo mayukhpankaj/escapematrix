@@ -1825,6 +1825,7 @@ FIX: Make tool discovery PUBLIC, but tool execution AUTHENTICATED
 
 # Remove authentication from tool discovery
 @app.get("/tools")
+@app.post("/tools")
 async def get_tools_public():
     """
     PUBLIC endpoint - No authentication required
