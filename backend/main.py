@@ -1908,8 +1908,8 @@ mcp_server = create_mcp_server(
     update_task_status_logic=update_task_status_logic,
 )
 
-# Mount MCP server
-app.mount("/mcp", mcp_server.streamable_http_app()) 
+# Mount MCP server - FastMCP creates /mcp route, so we mount at /mcp prefix
+app.mount("/mcp", mcp_server.streamable_http_app(), name="mcp") 
 
 
 
