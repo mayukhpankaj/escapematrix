@@ -115,6 +115,30 @@ def get_gemini_model():
     return genai.GenerativeModel('gemini-pro')
 
 
+#-----MCP var Begins----
+
+# Add this near the top with other environment variables
+MCP_AUTH_TOKEN = os.getenv("MCP_AUTH_TOKEN", "escm_mcp_token_2026_secure")
+
+
+# Add this authentication function
+async def verify_mcp_token(authorization: str = Header(None)) -> bool:
+    """Verify MCP authentication token"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    
+    token = authorization.replace("Bearer ", "")
+    if token != MCP_AUTH_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid MCP token")
+    
+    return True
+
+
+
+
+#-----MCP Var ENDS -----
+
+
 # Pydantic Models
 class TaskCreate(BaseModel):
     """Model for creating a new task"""
@@ -907,6 +931,7 @@ async def make_call(
             "to_number": "+919024175580",
             "agent_id": "agent_7643fe36677ac912003811b209",
             "retell_llm_dynamic_variables": {
+                "user_id": user_id,
                 "user_name": user_name,
                 "task_list": task_text
             }
@@ -1778,6 +1803,164 @@ async def check_payment_status(payment_id: str):
         return {"status": "succeeded", "confirmed_by": "webhook"}
     else:
         return {"status": "failed", "reason": "no_webhook_confirmation"}
+
+
+
+#MCP endpoints 
+
+
+# Add these 4 MCP endpoints:
+
+@app.post("/mcp/tasks/list")
+async def mcp_get_user_tasks(
+    request_data: dict,
+    authenticated: bool = Depends(verify_mcp_token)
+):
+    """MCP: Get all pending tasks for a user"""
+    try:
+        user_id = request_data.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        
+        tasks_response = supabase.table("short_term_tasks")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .order("created_at", desc=True)\
+            .execute()
+        
+        all_tasks = tasks_response.data if tasks_response.data else []
+        
+        pending_tasks = [
+            {
+                "id": task.get("id"),
+                "task_name": task.get("task_name"),
+                "task_description": task.get("task_description"),
+                "status": task.get("status"),
+                "priority": task.get("priority")
+            }
+            for task in all_tasks 
+            if task.get("status") in ["TO-DO", "IN-PROGRESS"]
+        ]
+        
+        logger.info(f"MCP: Retrieved {len(pending_tasks)} pending tasks for user {user_id}")
+        
+        return {
+            "success": True,
+            "message": f"Found {len(pending_tasks)} pending tasks",
+            "tasks": pending_tasks,
+            "count": len(pending_tasks)
+        }
+    
+    except Exception as e:
+        logger.error(f"MCP: Error fetching tasks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/mcp/tasks/update-status")
+async def mcp_update_task_status(
+    request_data: dict,
+    authenticated: bool = Depends(verify_mcp_token)
+):
+    """MCP: Update task status"""
+    try:
+        user_id = request_data.get("user_id")
+        task_name = request_data.get("task_name")
+        new_status = request_data.get("new_status")
+        
+        if not user_id or not task_name or not new_status:
+            raise HTTPException(status_code=400, detail="user_id, task_name, and new_status are required")
+        
+        valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
+        if new_status not in valid_statuses:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+        
+        tasks_response = supabase.table("short_term_tasks")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .execute()
+        
+        if not tasks_response.data:
+            return {
+                "success": False,
+                "message": f"No tasks found for user"
+            }
+        
+        matching_task = None
+        for task in tasks_response.data:
+            if task_name.lower() in task.get("task_name", "").lower():
+                matching_task = task
+                break
+        
+        if not matching_task:
+            return {
+                "success": False,
+                "message": f"Task '{task_name}' not found",
+                "available_tasks": [t["task_name"] for t in tasks_response.data]
+            }
+        
+        task_id = matching_task["id"]
+        old_status = matching_task["status"]
+        
+        update_response = supabase.table("short_term_tasks")\
+            .update({"status": new_status})\
+            .eq("id", task_id)\
+            .execute()
+        
+        if update_response.data:
+            logger.info(f"MCP: Updated task '{task_name}' from {old_status} to {new_status}")
+            
+            return {
+                "success": True,
+                "message": f"Task '{matching_task['task_name']}' marked as {new_status}",
+                "task_id": task_id,
+                "task_name": matching_task["task_name"],
+                "old_status": old_status,
+                "new_status": new_status
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update task")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"MCP: Error updating task status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/mcp/tasks/mark-complete")
+async def mcp_mark_task_complete(
+    request_data: dict,
+    authenticated: bool = Depends(verify_mcp_token)
+):
+    """MCP: Mark task as completed"""
+    try:
+        user_id = request_data.get("user_id")
+        task_name = request_data.get("task_name")
+        
+        if not user_id or not task_name:
+            raise HTTPException(status_code=400, detail="user_id and task_name are required")
+        
+        update_data = {
+            "user_id": user_id,
+            "task_name": task_name,
+            "new_status": "COMPLETED"
+        }
+        
+        return await mcp_update_task_status(update_data, authenticated)
+    
+    except Exception as e:
+        logger.error(f"MCP: Error marking task complete: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/mcp/health")
+async def mcp_health():
+    """MCP health check"""
+    return {
+        "status": "healthy",
+        "service": "Escape Matrix MCP",
+        "timestamp": datetime.now().isoformat()
+    }
 
 
 if __name__ == "__main__":
