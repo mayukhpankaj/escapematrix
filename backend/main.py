@@ -1813,128 +1813,104 @@ async def check_payment_status(payment_id: str):
 
 #MCP endpoints 
 
+# MCP logic functions
+async def get_user_tasks_logic(user_id: str):
+    """Get all pending tasks for the user"""
+    try:
+        # Verify user exists
+        user_response = supabase.table("users").select("id").eq("clerk_id", user_id).execute()
+        
+        if not user_response.data:
+            return "User not found"
+        
+        user = user_response.data[0]
+        db_user_id = user["id"]
+        
+        # Get pending tasks
+        tasks_response = supabase.table("tasks").select("*").eq("user_id", db_user_id).in_("status", ["TO-DO", "IN-PROGRESS"]).order("created_at", desc=False).execute()
+        
+        if not tasks_response.data:
+            return "No pending tasks found"
+        
+        tasks = tasks_response.data
+        result = "Pending tasks:\n\n"
+        
+        for task in tasks:
+            result += f"• {task['task_name']} (Status: {task['status']}, Priority: {task.get('priority', 'Medium')})\n"
+        
+        return result
+    except Exception as e:
+        return f"Error fetching tasks: {str(e)}"
 
-# --------------------------------------------------
-# DB LOGIC FUNCTIONS (USED BY MCP)
-# --------------------------------------------------
+async def mark_task_complete_logic(user_id: str, task_name: str):
+    """Mark a task as completed"""
+    try:
+        # Verify user exists
+        user_response = supabase.table("users").select("id").eq("clerk_id", user_id).execute()
+        
+        if not user_response.data:
+            return "User not found"
+        
+        user = user_response.data[0]
+        db_user_id = user["id"]
+        
+        # Find task by partial match
+        tasks_response = supabase.table("tasks").select("*").eq("user_id", db_user_id).ilike("task_name", f"%{task_name}%").execute()
+        
+        if not tasks_response.data:
+            return f"No task found matching '{task_name}'"
+        
+        task = tasks_response.data[0]
+        
+        # Update task status
+        supabase.table("tasks").update({"status": "COMPLETED"}).eq("id", task["id"]).execute()
+        
+        return f"Task '{task['task_name']}' marked as completed"
+    except Exception as e:
+        return f"Error marking task complete: {str(e)}"
 
-async def get_user_tasks_logic(user_id: str) -> str:
-    if not user_id:
-        return "Error: user_id is required"
+async def update_task_status_logic(user_id: str, task_name: str, new_status: str):
+    """Update a task's status"""
+    try:
+        # Verify user exists
+        user_response = supabase.table("users").select("id").eq("clerk_id", user_id).execute()
+        
+        if not user_response.data:
+            return "User not found"
+        
+        user = user_response.data[0]
+        db_user_id = user["id"]
+        
+        # Find task by partial match
+        tasks_response = supabase.table("tasks").select("*").eq("user_id", db_user_id).ilike("task_name", f"%{task_name}%").execute()
+        
+        if not tasks_response.data:
+            return f"No task found matching '{task_name}'"
+        
+        task = tasks_response.data[0]
+        
+        # Validate status
+        valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
+        if new_status not in valid_statuses:
+            return f"Invalid status '{new_status}'. Valid statuses are: {', '.join(valid_statuses)}"
+        
+        # Update task status
+        supabase.table("tasks").update({"status": new_status}).eq("id", task["id"]).execute()
+        
+        return f"Task '{task['task_name']}' status updated to {new_status}"
+    except Exception as e:
+        return f"Error updating task status: {str(e)}"
 
-    res = supabase.table("short_term_tasks") \
-        .select("*") \
-        .eq("user_id", user_id) \
-        .order("created_at", desc=True) \
-        .execute()
-
-    tasks = res.data or []
-
-    pending = [
-        t for t in tasks
-        if t.get("status") in ["TO-DO", "IN-PROGRESS"]
-    ]
-
-    if not pending:
-        return "No pending tasks found. Great job staying productive!"
-
-    lines = [
-        f"• {t['task_name']} ({t['status']})"
-        for t in pending
-    ]
-
-    return f"Found {len(pending)} pending tasks:\n\n" + "\n".join(lines)
-
-
-async def mark_task_complete_logic(user_id: str, task_name: str) -> str:
-    if not user_id or not task_name:
-        return "Error: user_id and task_name are required"
-
-    res = supabase.table("short_term_tasks") \
-        .select("*") \
-        .eq("user_id", user_id) \
-        .execute()
-
-    tasks = res.data or []
-    if not tasks:
-        return "No tasks found for this user."
-
-    match = None
-    for t in tasks:
-        if task_name.lower() in t.get("task_name", "").lower():
-            match = t
-            break
-
-    if not match:
-        available = ", ".join(
-            [t["task_name"] for t in tasks[:5]]
-        )
-        return f"Task '{task_name}' not found. Available tasks: {available}"
-
-    old_status = match["status"]
-
-    supabase.table("short_term_tasks") \
-        .update({"status": "COMPLETED"}) \
-        .eq("id", match["id"]) \
-        .execute()
-
-    return (
-        f"✅ Successfully marked '{match['task_name']}' "
-        f"as COMPLETED (was {old_status})"
-    )
-
-
-async def update_task_status_logic(
-    user_id: str,
-    task_name: str,
-    new_status: str
-) -> str:
-    valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
-
-    if new_status not in valid_statuses:
-        return f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
-
-    res = supabase.table("short_term_tasks") \
-        .select("*") \
-        .eq("user_id", user_id) \
-        .execute()
-
-    tasks = res.data or []
-    if not tasks:
-        return "No tasks found for this user."
-
-    match = None
-    for t in tasks:
-        if task_name.lower() in t.get("task_name", "").lower():
-            match = t
-            break
-
-    if not match:
-        return f"Task '{task_name}' not found."
-
-    old_status = match["status"]
-
-    supabase.table("short_term_tasks") \
-        .update({"status": new_status}) \
-        .eq("id", match["id"]) \
-        .execute()
-
-    return (
-        f"✅ Updated '{match['task_name']}' "
-        f"from {old_status} to {new_status}"
-    )
-
-# --------------------------------------------------
-# MCP SERVER MOUNT
-# --------------------------------------------------
-
-mcp = create_mcp_server(
-    get_user_tasks_logic,
-    mark_task_complete_logic,
-    update_task_status_logic,
+# Create MCP server
+mcp_server = create_mcp_server(
+    get_user_tasks_logic=get_user_tasks_logic,
+    mark_task_complete_logic=mark_task_complete_logic,
+    update_task_status_logic=update_task_status_logic,
 )
 
-app.mount("/mcp", mcp)
+# Mount MCP server
+app.mount("/mcp", mcp_server.streamable_http_app()) 
+
 
 
 
