@@ -1908,8 +1908,14 @@ mcp_server = create_mcp_server(
     update_task_status_logic=update_task_status_logic,
 )
 
-# Mount MCP server using SSE transport for better FastAPI integration
-app.mount("/mcp", mcp_server.sse_app(), name="mcp") 
+# Note: MCP server needs to run independently, not mounted in FastAPI
+# MCP server will be available at separate port if needed
+# mcp_server = create_mcp_server(
+#     get_user_tasks_logic=get_user_tasks_logic,
+#     mark_task_complete_logic=mark_task_complete_logic,
+#     update_task_status_logic=update_task_status_logic,
+# )
+# app.mount("/mcp", mcp_server.streamable_http_app(), name="mcp") 
 
 
 
