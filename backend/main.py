@@ -1817,26 +1817,27 @@ async def check_payment_status(payment_id: str):
 async def get_user_tasks_logic(user_id: str):
     """Get all pending tasks for the user"""
     try:
-        # Verify user exists
-        user_response = supabase.table("users").select("id").eq("clerk_id", user_id).execute()
+        # Get pending tasks from short_term_tasks using clerk_id directly
+        short_tasks_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).in_("status", ["TO-DO", "IN-PROGRESS"]).order("created_at", desc=False).execute()
         
-        if not user_response.data:
-            return "User not found"
+        # Get pending tasks from long_term_tasks using clerk_id directly
+        long_tasks_response = supabase.table("long_term_tasks").select("*").eq("user_id", user_id).in_("status", ["TO-DO", "IN-PROGRESS"]).order("created_at", desc=False).execute()
         
-        user = user_response.data[0]
-        db_user_id = user["id"]
+        all_tasks = []
         
-        # Get pending tasks
-        tasks_response = supabase.table("tasks").select("*").eq("user_id", db_user_id).in_("status", ["TO-DO", "IN-PROGRESS"]).order("created_at", desc=False).execute()
+        if short_tasks_response.data:
+            for task in short_tasks_response.data:
+                all_tasks.append(f"• {task['task_name']} (Type: Short-term, Status: {task['status']}, Priority: {task.get('priority', 'Medium')})")
         
-        if not tasks_response.data:
+        if long_tasks_response.data:
+            for task in long_tasks_response.data:
+                all_tasks.append(f"• {task['task_name']} (Type: Long-term, Status: {task['status']}, Priority: {task.get('priority', 'Medium')})")
+        
+        if not all_tasks:
             return "No pending tasks found"
         
-        tasks = tasks_response.data
         result = "Pending tasks:\n\n"
-        
-        for task in tasks:
-            result += f"• {task['task_name']} (Status: {task['status']}, Priority: {task.get('priority', 'Medium')})\n"
+        result += "\n".join(all_tasks)
         
         return result
     except Exception as e:
@@ -1845,59 +1846,60 @@ async def get_user_tasks_logic(user_id: str):
 async def mark_task_complete_logic(user_id: str, task_name: str):
     """Mark a task as completed"""
     try:
-        # Verify user exists
-        user_response = supabase.table("users").select("id").eq("clerk_id", user_id).execute()
+        # Find task by partial match in short_term_tasks first
+        short_tasks_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).ilike("task_name", f"%{task_name}%").execute()
         
-        if not user_response.data:
-            return "User not found"
+        if short_tasks_response.data:
+            task = short_tasks_response.data[0]
+            # Update task status
+            supabase.table("short_term_tasks").update({"status": "COMPLETED"}).eq("id", task["id"]).execute()
+            return f"Task '{task['task_name']}' marked as completed"
         
-        user = user_response.data[0]
-        db_user_id = user["id"]
+        # Find task by partial match in long_term_tasks
+        long_tasks_response = supabase.table("long_term_tasks").select("*").eq("user_id", user_id).ilike("task_name", f"%{task_name}%").execute()
         
-        # Find task by partial match
-        tasks_response = supabase.table("tasks").select("*").eq("user_id", db_user_id).ilike("task_name", f"%{task_name}%").execute()
+        if long_tasks_response.data:
+            task = long_tasks_response.data[0]
+            # Update task status
+            supabase.table("long_term_tasks").update({"status": "COMPLETED"}).eq("id", task["id"]).execute()
+            return f"Task '{task['task_name']}' marked as completed"
         
-        if not tasks_response.data:
-            return f"No task found matching '{task_name}'"
-        
-        task = tasks_response.data[0]
-        
-        # Update task status
-        supabase.table("tasks").update({"status": "COMPLETED"}).eq("id", task["id"]).execute()
-        
-        return f"Task '{task['task_name']}' marked as completed"
+        return f"No task found matching '{task_name}'"
     except Exception as e:
         return f"Error marking task complete: {str(e)}"
 
 async def update_task_status_logic(user_id: str, task_name: str, new_status: str):
     """Update a task's status"""
     try:
-        # Verify user exists
-        user_response = supabase.table("users").select("id").eq("clerk_id", user_id).execute()
+        # Find task by partial match in short_term_tasks first
+        short_tasks_response = supabase.table("short_term_tasks").select("*").eq("user_id", user_id).ilike("task_name", f"%{task_name}%").execute()
         
-        if not user_response.data:
-            return "User not found"
+        if short_tasks_response.data:
+            task = short_tasks_response.data[0]
+            # Validate status
+            valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
+            if new_status not in valid_statuses:
+                return f"Invalid status '{new_status}'. Valid statuses are: {', '.join(valid_statuses)}"
+            
+            # Update task status
+            supabase.table("short_term_tasks").update({"status": new_status}).eq("id", task["id"]).execute()
+            return f"Task '{task['task_name']}' status updated to {new_status}"
         
-        user = user_response.data[0]
-        db_user_id = user["id"]
+        # Find task by partial match in long_term_tasks
+        long_tasks_response = supabase.table("long_term_tasks").select("*").eq("user_id", user_id).ilike("task_name", f"%{task_name}%").execute()
         
-        # Find task by partial match
-        tasks_response = supabase.table("tasks").select("*").eq("user_id", db_user_id).ilike("task_name", f"%{task_name}%").execute()
+        if long_tasks_response.data:
+            task = long_tasks_response.data[0]
+            # Validate status
+            valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
+            if new_status not in valid_statuses:
+                return f"Invalid status '{new_status}'. Valid statuses are: {', '.join(valid_statuses)}"
+            
+            # Update task status
+            supabase.table("long_term_tasks").update({"status": new_status}).eq("id", task["id"]).execute()
+            return f"Task '{task['task_name']}' status updated to {new_status}"
         
-        if not tasks_response.data:
-            return f"No task found matching '{task_name}'"
-        
-        task = tasks_response.data[0]
-        
-        # Validate status
-        valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
-        if new_status not in valid_statuses:
-            return f"Invalid status '{new_status}'. Valid statuses are: {', '.join(valid_statuses)}"
-        
-        # Update task status
-        supabase.table("tasks").update({"status": new_status}).eq("id", task["id"]).execute()
-        
-        return f"Task '{task['task_name']}' status updated to {new_status}"
+        return f"No task found matching '{task_name}'"
     except Exception as e:
         return f"Error updating task status: {str(e)}"
 
