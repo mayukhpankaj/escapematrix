@@ -1811,155 +1811,301 @@ async def check_payment_status(payment_id: str):
 
 # Add these 4 MCP endpoints:
 
-@app.post("/mcp/tasks/list")
-async def mcp_get_user_tasks(
-    request_data: dict,
-    authenticated: bool = Depends(verify_mcp_token)
-):
-    """MCP: Get all pending tasks for a user"""
-    try:
-        user_id = request_data.get("user_id")
-        if not user_id:
-            raise HTTPException(status_code=400, detail="user_id is required")
-        
-        tasks_response = supabase.table("short_term_tasks")\
-            .select("*")\
-            .eq("user_id", user_id)\
-            .order("created_at", desc=True)\
-            .execute()
-        
-        all_tasks = tasks_response.data if tasks_response.data else []
-        
-        pending_tasks = [
+"""
+MCP-Compliant Server for Retell AI Integration
+This implements the Model Context Protocol specification
+"""
+
+# Add these endpoints to your main.py backend
+
+@app.get("/mcp/tools")
+async def mcp_list_tools(authenticated: bool = Depends(verify_mcp_token)):
+    """
+    MCP Tool Discovery Endpoint
+    This tells Retell AI what tools are available
+    """
+    return {
+        "tools": [
             {
-                "id": task.get("id"),
-                "task_name": task.get("task_name"),
-                "task_description": task.get("task_description"),
-                "status": task.get("status"),
-                "priority": task.get("priority")
+                "name": "get_user_tasks",
+                "description": "Get all pending tasks (TO-DO and IN-PROGRESS) for the user. Use this to fetch the latest task list during the call.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "user_id": {
+                            "type": "string",
+                            "description": "The Clerk user ID of the user whose tasks to retrieve"
+                        }
+                    },
+                    "required": ["user_id"]
+                }
+            },
+            {
+                "name": "mark_task_complete",
+                "description": "Mark a task as COMPLETED. Use this when the user confirms they have finished a task. The task_name can be a partial match (case-insensitive).",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "user_id": {
+                            "type": "string",
+                            "description": "The Clerk user ID of the user"
+                        },
+                        "task_name": {
+                            "type": "string",
+                            "description": "The name of the task to mark as complete (exact or partial match)"
+                        }
+                    },
+                    "required": ["user_id", "task_name"]
+                }
+            },
+            {
+                "name": "update_task_status",
+                "description": "Update a task's status to TO-DO, IN-PROGRESS, or COMPLETED. Use this for more granular status control.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "user_id": {
+                            "type": "string",
+                            "description": "The Clerk user ID of the user"
+                        },
+                        "task_name": {
+                            "type": "string",
+                            "description": "The name of the task to update (exact or partial match)"
+                        },
+                        "new_status": {
+                            "type": "string",
+                            "enum": ["TO-DO", "IN-PROGRESS", "COMPLETED"],
+                            "description": "The new status for the task"
+                        }
+                    },
+                    "required": ["user_id", "task_name", "new_status"]
+                }
             }
-            for task in all_tasks 
-            if task.get("status") in ["TO-DO", "IN-PROGRESS"]
         ]
-        
-        logger.info(f"MCP: Retrieved {len(pending_tasks)} pending tasks for user {user_id}")
-        
-        return {
-            "success": True,
-            "message": f"Found {len(pending_tasks)} pending tasks",
-            "tasks": pending_tasks,
-            "count": len(pending_tasks)
-        }
-    
-    except Exception as e:
-        logger.error(f"MCP: Error fetching tasks: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    }
 
 
-@app.post("/mcp/tasks/update-status")
-async def mcp_update_task_status(
+@app.post("/mcp/tools/call")
+async def mcp_call_tool(
     request_data: dict,
     authenticated: bool = Depends(verify_mcp_token)
 ):
-    """MCP: Update task status"""
+    """
+    MCP Tool Execution Endpoint
+    Retell AI calls this endpoint to execute tools
+    """
     try:
-        user_id = request_data.get("user_id")
-        task_name = request_data.get("task_name")
-        new_status = request_data.get("new_status")
+        tool_name = request_data.get("name")
+        arguments = request_data.get("arguments", {})
         
-        if not user_id or not task_name or not new_status:
-            raise HTTPException(status_code=400, detail="user_id, task_name, and new_status are required")
+        logger.info(f"MCP Tool Call: {tool_name} with args: {arguments}")
         
-        valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
-        if new_status not in valid_statuses:
-            raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
-        
-        tasks_response = supabase.table("short_term_tasks")\
-            .select("*")\
-            .eq("user_id", user_id)\
-            .execute()
-        
-        if not tasks_response.data:
-            return {
-                "success": False,
-                "message": f"No tasks found for user"
-            }
-        
-        matching_task = None
-        for task in tasks_response.data:
-            if task_name.lower() in task.get("task_name", "").lower():
-                matching_task = task
-                break
-        
-        if not matching_task:
-            return {
-                "success": False,
-                "message": f"Task '{task_name}' not found",
-                "available_tasks": [t["task_name"] for t in tasks_response.data]
-            }
-        
-        task_id = matching_task["id"]
-        old_status = matching_task["status"]
-        
-        update_response = supabase.table("short_term_tasks")\
-            .update({"status": new_status})\
-            .eq("id", task_id)\
-            .execute()
-        
-        if update_response.data:
-            logger.info(f"MCP: Updated task '{task_name}' from {old_status} to {new_status}")
+        if tool_name == "get_user_tasks":
+            user_id = arguments.get("user_id")
+            if not user_id:
+                return {
+                    "error": "user_id is required"
+                }
+            
+            # Get all short-term tasks
+            tasks_response = supabase.table("short_term_tasks")\
+                .select("*")\
+                .eq("user_id", user_id)\
+                .order("created_at", desc=True)\
+                .execute()
+            
+            all_tasks = tasks_response.data if tasks_response.data else []
+            
+            # Filter for pending tasks
+            pending_tasks = [
+                {
+                    "task_name": task.get("task_name"),
+                    "task_description": task.get("task_description"),
+                    "status": task.get("status"),
+                    "priority": task.get("priority")
+                }
+                for task in all_tasks 
+                if task.get("status") in ["TO-DO", "IN-PROGRESS"]
+            ]
+            
+            logger.info(f"MCP: Retrieved {len(pending_tasks)} pending tasks for user {user_id}")
             
             return {
-                "success": True,
-                "message": f"Task '{matching_task['task_name']}' marked as {new_status}",
-                "task_id": task_id,
-                "task_name": matching_task["task_name"],
-                "old_status": old_status,
-                "new_status": new_status
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Found {len(pending_tasks)} pending tasks:\n" + 
+                                "\n".join([f"- {t['task_name']} ({t['status']}): {t['task_description']}" 
+                                          for t in pending_tasks])
+                    }
+                ]
             }
+        
+        elif tool_name == "mark_task_complete":
+            user_id = arguments.get("user_id")
+            task_name = arguments.get("task_name")
+            
+            if not user_id or not task_name:
+                return {
+                    "error": "user_id and task_name are required"
+                }
+            
+            # Find the task by name (case-insensitive partial match)
+            tasks_response = supabase.table("short_term_tasks")\
+                .select("*")\
+                .eq("user_id", user_id)\
+                .execute()
+            
+            if not tasks_response.data:
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"No tasks found for this user."
+                        }
+                    ]
+                }
+            
+            # Find matching task
+            matching_task = None
+            for task in tasks_response.data:
+                if task_name.lower() in task.get("task_name", "").lower():
+                    matching_task = task
+                    break
+            
+            if not matching_task:
+                available_tasks = [t["task_name"] for t in tasks_response.data]
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"Task '{task_name}' not found. Available tasks: {', '.join(available_tasks)}"
+                        }
+                    ]
+                }
+            
+            task_id = matching_task["id"]
+            old_status = matching_task["status"]
+            
+            # Update the task status
+            update_response = supabase.table("short_term_tasks")\
+                .update({"status": "COMPLETED"})\
+                .eq("id", task_id)\
+                .execute()
+            
+            if update_response.data:
+                logger.info(f"MCP: Marked task '{matching_task['task_name']}' as COMPLETED")
+                
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"✅ Successfully marked '{matching_task['task_name']}' as COMPLETED (was {old_status})"
+                        }
+                    ]
+                }
+            else:
+                return {
+                    "error": "Failed to update task in database"
+                }
+        
+        elif tool_name == "update_task_status":
+            user_id = arguments.get("user_id")
+            task_name = arguments.get("task_name")
+            new_status = arguments.get("new_status")
+            
+            if not user_id or not task_name or not new_status:
+                return {
+                    "error": "user_id, task_name, and new_status are required"
+                }
+            
+            # Validate status
+            valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
+            if new_status not in valid_statuses:
+                return {
+                    "error": f"Invalid status. Must be one of: {valid_statuses}"
+                }
+            
+            # Find the task
+            tasks_response = supabase.table("short_term_tasks")\
+                .select("*")\
+                .eq("user_id", user_id)\
+                .execute()
+            
+            if not tasks_response.data:
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"No tasks found for this user."
+                        }
+                    ]
+                }
+            
+            # Find matching task
+            matching_task = None
+            for task in tasks_response.data:
+                if task_name.lower() in task.get("task_name", "").lower():
+                    matching_task = task
+                    break
+            
+            if not matching_task:
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"Task '{task_name}' not found."
+                        }
+                    ]
+                }
+            
+            task_id = matching_task["id"]
+            old_status = matching_task["status"]
+            
+            # Update the task status
+            update_response = supabase.table("short_term_tasks")\
+                .update({"status": new_status})\
+                .eq("id", task_id)\
+                .execute()
+            
+            if update_response.data:
+                logger.info(f"MCP: Updated task '{matching_task['task_name']}' from {old_status} to {new_status}")
+                
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"✅ Updated '{matching_task['task_name']}' from {old_status} to {new_status}"
+                        }
+                    ]
+                }
+            else:
+                return {
+                    "error": "Failed to update task in database"
+                }
+        
         else:
-            raise HTTPException(status_code=500, detail="Failed to update task")
+            return {
+                "error": f"Unknown tool: {tool_name}"
+            }
     
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"MCP: Error updating task status: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/mcp/tasks/mark-complete")
-async def mcp_mark_task_complete(
-    request_data: dict,
-    authenticated: bool = Depends(verify_mcp_token)
-):
-    """MCP: Mark task as completed"""
-    try:
-        user_id = request_data.get("user_id")
-        task_name = request_data.get("task_name")
-        
-        if not user_id or not task_name:
-            raise HTTPException(status_code=400, detail="user_id and task_name are required")
-        
-        update_data = {
-            "user_id": user_id,
-            "task_name": task_name,
-            "new_status": "COMPLETED"
+        logger.error(f"MCP: Error executing tool: {str(e)}")
+        return {
+            "error": f"Tool execution failed: {str(e)}"
         }
-        
-        return await mcp_update_task_status(update_data, authenticated)
-    
-    except Exception as e:
-        logger.error(f"MCP: Error marking task complete: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/mcp/health")
-async def mcp_health():
-    """MCP health check"""
+@app.get("/mcp")
+async def mcp_root():
+    """MCP server info endpoint"""
     return {
-        "status": "healthy",
-        "service": "Escape Matrix MCP",
-        "timestamp": datetime.now().isoformat()
+        "name": "Escape Matrix Task Manager",
+        "version": "1.0.0",
+        "protocol_version": "2024-11-05",
+        "capabilities": {
+            "tools": {}
+        }
     }
 
 
