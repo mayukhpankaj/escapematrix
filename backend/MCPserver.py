@@ -1,7 +1,7 @@
 # MCPserver.py
 import os
 import logging
-from mcp.server.fastapi import FastAPIMCP
+from mcp import FastAPIMCP
 from mcp.server.context import get_request_context
 from mcp.types import TextContent
 
