@@ -14,5 +14,5 @@ COPY . .
 EXPOSE 8080
 EXPOSE 8081
 
-# Run both FastAPI and MCP servers
-CMD ["python", "start_servers.py"]
+# Run the FastAPI server
+CMD ["python", "main.py"]
