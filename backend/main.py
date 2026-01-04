@@ -1809,32 +1809,40 @@ async def check_payment_status(payment_id: str):
 #MCP endpoints 
 
 
-# Add these 4 MCP endpoints:
-
 """
-MCP-Compliant Server for Retell AI Integration
-This implements the Model Context Protocol specification
+SOLUTION: Retell AI MCP Server - Authentication Issue Fix
+
+The "Loading..." issue is likely because:
+1. Retell AI calls GET /tools to discover tools BEFORE authentication
+2. Your verify_mcp_token is blocking the tool discovery request
+
+FIX: Make tool discovery PUBLIC, but tool execution AUTHENTICATED
 """
 
-# Add these endpoints to your main.py backend
+# =====================================================
+# REPLACE YOUR EXISTING MCP ENDPOINTS WITH THESE
+# =====================================================
 
-@app.get("/mcp/tools")
-async def mcp_list_tools(authenticated: bool = Depends(verify_mcp_token)):
+# Remove authentication from tool discovery
+@app.get("/tools")
+async def get_tools_public():
     """
-    MCP Tool Discovery Endpoint
-    This tells Retell AI what tools are available
+    PUBLIC endpoint - No authentication required
+    Retell AI calls this to discover available tools
     """
+    logger.info("Tool discovery request received")
+    
     return {
         "tools": [
             {
                 "name": "get_user_tasks",
-                "description": "Get all pending tasks (TO-DO and IN-PROGRESS) for the user. Use this to fetch the latest task list during the call.",
+                "description": "Get all pending tasks (TO-DO and IN-PROGRESS) for the user. Use this to fetch the current task list.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "user_id": {
                             "type": "string",
-                            "description": "The Clerk user ID of the user whose tasks to retrieve"
+                            "description": "The Clerk user ID of the user"
                         }
                     },
                     "required": ["user_id"]
@@ -1842,17 +1850,17 @@ async def mcp_list_tools(authenticated: bool = Depends(verify_mcp_token)):
             },
             {
                 "name": "mark_task_complete",
-                "description": "Mark a task as COMPLETED. Use this when the user confirms they have finished a task. The task_name can be a partial match (case-insensitive).",
+                "description": "Mark a task as COMPLETED. Use when user confirms they finished a task. Task name can be partial match.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "user_id": {
                             "type": "string",
-                            "description": "The Clerk user ID of the user"
+                            "description": "The Clerk user ID"
                         },
                         "task_name": {
                             "type": "string",
-                            "description": "The name of the task to mark as complete (exact or partial match)"
+                            "description": "The name of the task (exact or partial match, case-insensitive)"
                         }
                     },
                     "required": ["user_id", "task_name"]
@@ -1860,17 +1868,17 @@ async def mcp_list_tools(authenticated: bool = Depends(verify_mcp_token)):
             },
             {
                 "name": "update_task_status",
-                "description": "Update a task's status to TO-DO, IN-PROGRESS, or COMPLETED. Use this for more granular status control.",
+                "description": "Update a task's status to TO-DO, IN-PROGRESS, or COMPLETED",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "user_id": {
                             "type": "string",
-                            "description": "The Clerk user ID of the user"
+                            "description": "The Clerk user ID"
                         },
                         "task_name": {
                             "type": "string",
-                            "description": "The name of the task to update (exact or partial match)"
+                            "description": "The task name"
                         },
                         "new_status": {
                             "type": "string",
@@ -1885,29 +1893,36 @@ async def mcp_list_tools(authenticated: bool = Depends(verify_mcp_token)):
     }
 
 
-@app.post("/mcp/tools/call")
-async def mcp_call_tool(
+# Keep authentication on tool execution
+@app.post("/call")
+async def call_tool_authenticated(
     request_data: dict,
     authenticated: bool = Depends(verify_mcp_token)
 ):
     """
-    MCP Tool Execution Endpoint
-    Retell AI calls this endpoint to execute tools
+    AUTHENTICATED endpoint - Tool execution requires auth
+    Retell AI calls this to execute tools
     """
     try:
         tool_name = request_data.get("name")
         arguments = request_data.get("arguments", {})
         
-        logger.info(f"MCP Tool Call: {tool_name} with args: {arguments}")
+        logger.info(f"🔧 Tool execution: {tool_name}")
+        logger.info(f"📝 Arguments: {arguments}")
         
+        # Tool 1: Get User Tasks
         if tool_name == "get_user_tasks":
             user_id = arguments.get("user_id")
+            
             if not user_id:
                 return {
-                    "error": "user_id is required"
+                    "content": [{
+                        "type": "text",
+                        "text": "Error: user_id is required"
+                    }]
                 }
             
-            # Get all short-term tasks
+            # Fetch tasks from database
             tasks_response = supabase.table("short_term_tasks")\
                 .select("*")\
                 .eq("user_id", user_id)\
@@ -1916,41 +1931,49 @@ async def mcp_call_tool(
             
             all_tasks = tasks_response.data if tasks_response.data else []
             
-            # Filter for pending tasks
+            # Filter pending tasks
             pending_tasks = [
-                {
-                    "task_name": task.get("task_name"),
-                    "task_description": task.get("task_description"),
-                    "status": task.get("status"),
-                    "priority": task.get("priority")
-                }
-                for task in all_tasks 
+                task for task in all_tasks 
                 if task.get("status") in ["TO-DO", "IN-PROGRESS"]
             ]
             
-            logger.info(f"MCP: Retrieved {len(pending_tasks)} pending tasks for user {user_id}")
+            logger.info(f"✅ Found {len(pending_tasks)} pending tasks for user {user_id}")
+            
+            if not pending_tasks:
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": "No pending tasks found. Great job staying on top of everything!"
+                    }]
+                }
+            
+            # Format task list
+            task_list = "\n".join([
+                f"• {task['task_name']} ({task['status']}): {task.get('task_description', 'No description')}"
+                for task in pending_tasks
+            ])
             
             return {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": f"Found {len(pending_tasks)} pending tasks:\n" + 
-                                "\n".join([f"- {t['task_name']} ({t['status']}): {t['task_description']}" 
-                                          for t in pending_tasks])
-                    }
-                ]
+                "content": [{
+                    "type": "text",
+                    "text": f"Found {len(pending_tasks)} pending tasks:\n\n{task_list}"
+                }]
             }
         
+        # Tool 2: Mark Task Complete
         elif tool_name == "mark_task_complete":
             user_id = arguments.get("user_id")
             task_name = arguments.get("task_name")
             
             if not user_id or not task_name:
                 return {
-                    "error": "user_id and task_name are required"
+                    "content": [{
+                        "type": "text",
+                        "text": "Error: user_id and task_name are required"
+                    }]
                 }
             
-            # Find the task by name (case-insensitive partial match)
+            # Find matching task
             tasks_response = supabase.table("short_term_tasks")\
                 .select("*")\
                 .eq("user_id", user_id)\
@@ -1958,15 +1981,13 @@ async def mcp_call_tool(
             
             if not tasks_response.data:
                 return {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"No tasks found for this user."
-                        }
-                    ]
+                    "content": [{
+                        "type": "text",
+                        "text": "No tasks found for this user"
+                    }]
                 }
             
-            # Find matching task
+            # Fuzzy match task name (case-insensitive partial match)
             matching_task = None
             for task in tasks_response.data:
                 if task_name.lower() in task.get("task_name", "").lower():
@@ -1974,41 +1995,40 @@ async def mcp_call_tool(
                     break
             
             if not matching_task:
-                available_tasks = [t["task_name"] for t in tasks_response.data]
+                available_tasks = [t["task_name"] for t in tasks_response.data[:5]]
                 return {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"Task '{task_name}' not found. Available tasks: {', '.join(available_tasks)}"
-                        }
-                    ]
+                    "content": [{
+                        "type": "text",
+                        "text": f"Task '{task_name}' not found. Available tasks: {', '.join(available_tasks)}"
+                    }]
                 }
             
-            task_id = matching_task["id"]
+            # Update task to COMPLETED
             old_status = matching_task["status"]
             
-            # Update the task status
             update_response = supabase.table("short_term_tasks")\
                 .update({"status": "COMPLETED"})\
-                .eq("id", task_id)\
+                .eq("id", matching_task["id"])\
                 .execute()
             
             if update_response.data:
-                logger.info(f"MCP: Marked task '{matching_task['task_name']}' as COMPLETED")
+                logger.info(f"✅ Marked task '{matching_task['task_name']}' as COMPLETED")
                 
                 return {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"✅ Successfully marked '{matching_task['task_name']}' as COMPLETED (was {old_status})"
-                        }
-                    ]
+                    "content": [{
+                        "type": "text",
+                        "text": f"✅ Successfully marked '{matching_task['task_name']}' as COMPLETED! (was {old_status})"
+                    }]
                 }
             else:
                 return {
-                    "error": "Failed to update task in database"
+                    "content": [{
+                        "type": "text",
+                        "text": "Failed to update task in database"
+                    }]
                 }
         
+        # Tool 3: Update Task Status
         elif tool_name == "update_task_status":
             user_id = arguments.get("user_id")
             task_name = arguments.get("task_name")
@@ -2016,17 +2036,23 @@ async def mcp_call_tool(
             
             if not user_id or not task_name or not new_status:
                 return {
-                    "error": "user_id, task_name, and new_status are required"
+                    "content": [{
+                        "type": "text",
+                        "text": "Error: user_id, task_name, and new_status are required"
+                    }]
                 }
             
             # Validate status
             valid_statuses = ["TO-DO", "IN-PROGRESS", "COMPLETED"]
             if new_status not in valid_statuses:
                 return {
-                    "error": f"Invalid status. Must be one of: {valid_statuses}"
+                    "content": [{
+                        "type": "text",
+                        "text": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+                    }]
                 }
             
-            # Find the task
+            # Find matching task
             tasks_response = supabase.table("short_term_tasks")\
                 .select("*")\
                 .eq("user_id", user_id)\
@@ -2034,15 +2060,12 @@ async def mcp_call_tool(
             
             if not tasks_response.data:
                 return {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"No tasks found for this user."
-                        }
-                    ]
+                    "content": [{
+                        "type": "text",
+                        "text": "No tasks found for this user"
+                    }]
                 }
             
-            # Find matching task
             matching_task = None
             for task in tasks_response.data:
                 if task_name.lower() in task.get("task_name", "").lower():
@@ -2051,62 +2074,57 @@ async def mcp_call_tool(
             
             if not matching_task:
                 return {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"Task '{task_name}' not found."
-                        }
-                    ]
+                    "content": [{
+                        "type": "text",
+                        "text": f"Task '{task_name}' not found"
+                    }]
                 }
             
-            task_id = matching_task["id"]
+            # Update task status
             old_status = matching_task["status"]
             
-            # Update the task status
             update_response = supabase.table("short_term_tasks")\
                 .update({"status": new_status})\
-                .eq("id", task_id)\
+                .eq("id", matching_task["id"])\
                 .execute()
             
             if update_response.data:
-                logger.info(f"MCP: Updated task '{matching_task['task_name']}' from {old_status} to {new_status}")
+                logger.info(f"✅ Updated task '{matching_task['task_name']}' from {old_status} to {new_status}")
                 
                 return {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"✅ Updated '{matching_task['task_name']}' from {old_status} to {new_status}"
-                        }
-                    ]
+                    "content": [{
+                        "type": "text",
+                        "text": f"✅ Updated '{matching_task['task_name']}' from {old_status} to {new_status}"
+                    }]
                 }
             else:
                 return {
-                    "error": "Failed to update task in database"
+                    "content": [{
+                        "type": "text",
+                        "text": "Failed to update task in database"
+                    }]
                 }
         
         else:
             return {
-                "error": f"Unknown tool: {tool_name}"
+                "content": [{
+                    "type": "text",
+                    "text": f"Unknown tool: {tool_name}"
+                }]
             }
     
     except Exception as e:
-        logger.error(f"MCP: Error executing tool: {str(e)}")
+        logger.error(f"❌ Tool execution error: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        
         return {
-            "error": f"Tool execution failed: {str(e)}"
+            "content": [{
+                "type": "text",
+                "text": f"Error executing tool: {str(e)}"
+            }]
         }
 
-
-@app.get("/mcp")
-async def mcp_root():
-    """MCP server info endpoint"""
-    return {
-        "name": "Escape Matrix Task Manager",
-        "version": "1.0.0",
-        "protocol_version": "2024-11-05",
-        "capabilities": {
-            "tools": {}
-        }
-    }
 
 
 if __name__ == "__main__":
