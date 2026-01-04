@@ -1908,14 +1908,153 @@ mcp_server = create_mcp_server(
     update_task_status_logic=update_task_status_logic,
 )
 
-# Note: MCP server needs to run independently, not mounted in FastAPI
-# MCP server will be available at separate port if needed
-# mcp_server = create_mcp_server(
-#     get_user_tasks_logic=get_user_tasks_logic,
-#     mark_task_complete_logic=mark_task_complete_logic,
-#     update_task_status_logic=update_task_status_logic,
-# )
-# app.mount("/mcp", mcp_server.streamable_http_app(), name="mcp") 
+# Create MCP endpoint manually
+@app.post("/mcp")
+async def handle_mcp(request: Request):
+    """Handle MCP requests"""
+    from fastapi.responses import JSONResponse
+    import json
+    
+    try:
+        body = await request.json()
+        
+        # Handle different MCP methods
+        method = body.get("method")
+        params = body.get("params", {})
+        request_id = body.get("id")
+        
+        if method == "initialize":
+            return JSONResponse({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {}
+                    },
+                    "serverInfo": {
+                        "name": "task-manager-mcp",
+                        "version": "1.0.0"
+                    }
+                }
+            })
+        
+        elif method == "tools/list":
+            return JSONResponse({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "tools": [
+                        {
+                            "name": "get_user_tasks",
+                            "description": "Get all pending tasks (TO-DO and IN-PROGRESS) for the user",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {"type": "string"}
+                                },
+                                "required": ["user_id"]
+                            }
+                        },
+                        {
+                            "name": "mark_task_complete",
+                            "description": "Mark a task as COMPLETED. Task name can be partial match.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {"type": "string"},
+                                    "task_name": {"type": "string"}
+                                },
+                                "required": ["user_id", "task_name"]
+                            }
+                        },
+                        {
+                            "name": "update_task_status",
+                            "description": "Update a task's status to TO-DO, IN-PROGRESS, or COMPLETED",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {"type": "string"},
+                                    "task_name": {"type": "string"},
+                                    "new_status": {"type": "string"}
+                                },
+                                "required": ["user_id", "task_name", "new_status"]
+                            }
+                        }
+                    ]
+                }
+            })
+        
+        elif method == "tools/call":
+            tool_name = params.get("name")
+            arguments = params.get("arguments", {})
+            
+            if tool_name == "get_user_tasks":
+                user_id = arguments.get("user_id")
+                result = await get_user_tasks_logic(user_id)
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "content": [{"type": "text", "text": result}]
+                    }
+                })
+            
+            elif tool_name == "mark_task_complete":
+                user_id = arguments.get("user_id")
+                task_name = arguments.get("task_name")
+                result = await mark_task_complete_logic(user_id, task_name)
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "content": [{"type": "text", "text": result}]
+                    }
+                })
+            
+            elif tool_name == "update_task_status":
+                user_id = arguments.get("user_id")
+                task_name = arguments.get("task_name")
+                new_status = arguments.get("new_status")
+                result = await update_task_status_logic(user_id, task_name, new_status)
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "content": [{"type": "text", "text": result}]
+                    }
+                })
+            
+            else:
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {
+                        "code": -32601,
+                        "message": f"Method not found: {tool_name}"
+                    }
+                })
+        
+        else:
+            return JSONResponse({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "error": {
+                    "code": -32601,
+                    "message": f"Method not found: {method}"
+                }
+            })
+    
+    except Exception as e:
+        logger.error(f"MCP Error: {str(e)}")
+        return JSONResponse({
+            "jsonrpc": "2.0",
+            "id": body.get("id"),
+            "error": {
+                "code": -32603,
+                "message": f"Internal error: {str(e)}"
+            }
+        }) 
 
 
 
