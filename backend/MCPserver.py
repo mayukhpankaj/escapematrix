@@ -15,6 +15,7 @@ def create_mcp_server(
     get_user_tasks_logic,
     mark_task_complete_logic,
     update_task_status_logic,
+    mark_habit_complete_logic,
 ):
     """
     MCP adapter layer for Retell AI
@@ -69,6 +70,21 @@ def create_mcp_server(
             text = await update_task_status_logic(
                 user_id, task_name, new_status
             )
+            return text
+        except Exception as e:
+            logger.error(str(e))
+            return f"Error: {str(e)}"
+
+    # --------------------------------------------------
+    # Tool: Mark Habit Complete
+    # --------------------------------------------------
+    @mcp.tool(
+        name="mark_habit_complete",
+        description="Mark a habit as completed for today. Habit name can be partial match."
+    )
+    async def mark_habit_complete(user_id: str, habit_name: str):
+        try:
+            text = await mark_habit_complete_logic(user_id, habit_name)
             return text
         except Exception as e:
             logger.error(str(e))

@@ -1903,11 +1903,48 @@ async def update_task_status_logic(user_id: str, task_name: str, new_status: str
     except Exception as e:
         return f"Error updating task status: {str(e)}"
 
+async def mark_habit_complete_logic(user_id: str, habit_name: str):
+    """Mark a habit as completed for today"""
+    try:
+        from datetime import date
+        
+        # Get today's date
+        today = date.today().isoformat()
+        
+        # Find habit by partial match
+        habits_response = supabase.table("daily_habits").select("*").eq("user_id", user_id).ilike("habit_name", f"%{habit_name}%").execute()
+        
+        if not habits_response.data:
+            return f"No habit found matching '{habit_name}'"
+        
+        habit = habits_response.data[0]
+        habit_id = habit["id"]
+        
+        # Check if already completed today
+        existing_completion = supabase.table("habit_completions").select("*").eq("habit_id", habit_id).eq("completion_date", today).execute()
+        
+        if existing_completion.data:
+            return f"Habit '{habit['habit_name']}' is already marked as completed for today ({today})"
+        
+        # Mark as completed
+        new_completion = {
+            "habit_id": habit_id,
+            "user_id": user_id,
+            "completion_date": today
+        }
+        
+        supabase.table("habit_completions").insert(new_completion).execute()
+        return f"Habit '{habit['habit_name']}' marked as completed for today ({today})"
+        
+    except Exception as e:
+        return f"Error marking habit complete: {str(e)}"
+
 # Create MCP server
 mcp_server = create_mcp_server(
     get_user_tasks_logic=get_user_tasks_logic,
     mark_task_complete_logic=mark_task_complete_logic,
     update_task_status_logic=update_task_status_logic,
+    mark_habit_complete_logic=mark_habit_complete_logic,
 )
 
 # Create MCP endpoint manually
@@ -1982,6 +2019,18 @@ async def handle_mcp(request: Request):
                                 },
                                 "required": ["user_id", "task_name", "new_status"]
                             }
+                        },
+                        {
+                            "name": "mark_habit_complete",
+                            "description": "Mark a habit as completed for today. Habit name can be partial match.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {"type": "string"},
+                                    "habit_name": {"type": "string"}
+                                },
+                                "required": ["user_id", "habit_name"]
+                            }
                         }
                     ]
                 }
@@ -2019,6 +2068,17 @@ async def handle_mcp(request: Request):
                 task_name = arguments.get("task_name")
                 new_status = arguments.get("new_status")
                 result = await update_task_status_logic(user_id, task_name, new_status)
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "content": [{"type": "text", "text": result}]
+                    }
+                })
+            elif tool_name == "mark_habit_complete":
+                user_id = arguments.get("user_id")
+                habit_name = arguments.get("habit_name")
+                result = await mark_habit_complete_logic(user_id, habit_name)
                 return JSONResponse({
                     "jsonrpc": "2.0",
                     "id": request_id,
