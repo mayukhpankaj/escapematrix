@@ -1,11 +1,22 @@
+# MCP + FastAPI
+mcp==1.25.0
 fastapi==0.110.1
-uvicorn==0.25.0
+uvicorn>=0.31.1,<0.35
+
+# Supabase / httpx dependencies
 supabase==2.27.0
+httpx>=0.27.1,<0.29
+
+# JWT / security / FastAPI extras
 pyjwt==2.10.1
 python-jose[cryptography]==3.5.0
 python-multipart==0.0.21
+
+# Pydantic settings
 pydantic-settings==2.12.0
+
+# Environment variables
 python-dotenv==1.2.1
+
+# Optional AI integration
 google-generativeai==0.8.3
-httpx>=0.27.1,<0.29
-mcp==1.25.0
